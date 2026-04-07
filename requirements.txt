@@ -1,0 +1,6 @@
+flask==3.0.3
+flask-socketio==5.3.6
+textblob==0.18.0
+simple-websocket==1.1.0
+requests==2.32.3
+python-dotenv==1.0.1

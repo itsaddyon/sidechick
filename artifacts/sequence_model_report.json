@@ -1,0 +1,24 @@
+{
+  "model_path": "d:\\Btech Projects\\Sidechick\\artifacts\\sequence_model.json",
+  "training_summary": {
+    "epochs": 30,
+    "samples": 384,
+    "final_loss": 0.0002,
+    "training_accuracy": 1.0,
+    "evaluation": {
+      "threshold": 0.5,
+      "samples": 96,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "avg_confidence": 0.99,
+      "confusion": {
+        "tp": 45,
+        "tn": 51,
+        "fp": 0,
+        "fn": 0
+      }
+    }
+  }
+}

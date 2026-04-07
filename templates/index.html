@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sidechick | Private Rooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml"/>
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+<div id="lobby" class="screen">
+  <div class="lobby-topbar">
+    <div class="lobby-brand">Sidechick</div>
+    <button class="ghost-btn icon-btn theme-toggle topbar-btn" data-theme-toggle type="button" aria-label="Toggle theme">Mode</button>
+  </div>
+  <div class="hero-shell">
+    <section class="hero-copy">
+      <div class="eyebrow">Private Rooms</div>
+      <h1>Chat in private rooms with people you choose.</h1>
+      <p class="hero-text">
+        Share a room code with friends. Only people with the code can join.
+      </p>
+    </section>
+
+    <section class="lobby-panel">
+      <div class="panel-heading">
+        <div>
+          <div class="panel-kicker">Start a room</div>
+          <h2>Start chat</h2>
+        </div>
+        <div class="panel-actions">
+          <div class="status-pill">Realtime</div>
+        </div>
+      </div>
+
+      <div class="simple-entry">
+        <label class="field-label" for="username-input">Your Name</label>
+        <input class="lobby-input" id="username-input" placeholder="Enter your name" maxlength="20" autofocus/>
+        <label class="field-label" for="room-input">Room Code</label>
+        <input class="lobby-input" id="room-input" placeholder="Shared room or case ID" maxlength="20"/>
+        <button class="primary-btn wide-btn" onclick="joinChat()">Start Chat</button>
+        <p class="field-note">Rooms are private by code. Only people with the code can join.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="app" class="screen app-screen" style="display:none;">
+  <div class="app-topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">Chat</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="ghost-btn icon-btn topbar-btn" id="toggle-ai-btn" onclick="toggleSidekick()" aria-label="Toggle detective mode">Detective</button>
+      <button class="ghost-btn icon-btn topbar-btn theme-toggle" data-theme-toggle type="button" aria-label="Toggle theme">Mode</button>
+      <div class="room-badge topbar-badge" id="room-badge">#session</div>
+      <button class="ghost-btn topbar-btn danger-btn" onclick="leaveChat()">Leave</button>
+    </div>
+  </div>
+  <div id="mode-toast" class="mode-toast" aria-live="polite">Detective mode: off</div>
+  <div class="app-shell">
+  <section id="chat-panel" class="workspace-column conversation-column">
+    <header class="workspace-header">
+      <div>
+        <div class="eyebrow">Chat Room</div>
+        <h2 id="header-title">Room</h2>
+        <p id="header-sub" class="header-sub">Waiting for someone to join...</p>
+      </div>
+    </header>
+
+    <div id="escalation-banner" class="alert-banner" style="display:none;"></div>
+    <div id="messages" class="messages"></div>
+    <div id="messages-empty" class="messages-empty">
+      <div class="empty-card">
+        <div class="empty-kicker">Say hi</div>
+        <h3>No messages yet.</h3>
+        <p>Send a message to start the chat.</p>
+      </div>
+    </div>
+
+    <footer class="composer">
+      <div class="composer-row">
+        <textarea id="msg-input" placeholder="Type a message..." rows="1" oninput="onTyping()" onkeydown="handleKey(event)"></textarea>
+        <button id="send-btn" class="send-fab" onclick="sendMessage()" aria-label="Send message">
+          <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h12m0 0l-4-4m4 4l-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </section>
+
+  <aside id="ai-panel" class="workspace-column intelligence-column">
+    <header class="intelligence-header">
+      <div>
+        <div class="eyebrow">Insights</div>
+        <h2>Vibe check</h2>
+      </div>
+      <div class="panel-status" id="ai-status">Insights: ready</div>
+    </header>
+
+    <div id="intel-overview" class="intel-pane is-active">
+      <section class="intel-card hero-card">
+        <div class="section-label">Vibe right now</div>
+        <div class="stage-row">
+          <div class="vibe-badge level-0" id="vibe-badge">
+            <span class="vibe-icon" id="vibe-icon">🙂</span>
+            <span id="vibe-label">Calm</span>
+          </div>
+          <div class="risk-projection">
+            <span class="risk-caption">Next vibe</span>
+            <strong id="prediction-text">Waiting for messages.</strong>
+          </div>
+        </div>
+        <p class="vibe-detail" id="vibe-detail"></p>
+        <div class="hero-callout" id="hero-callout">
+          Your chat stays in this room. Only people with the code can join.
+        </div>
+      </section>
+
+      <section class="intel-card">
+        <div class="section-label">Signals</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span>Vibe shift</span>
+            <strong id="drift-score">--</strong>
+          </div>
+          <div class="stat-box">
+            <span>Heat level</span>
+            <strong id="drift-risk">--</strong>
+          </div>
+          <div class="stat-box">
+            <span>Next vibe</span>
+            <strong id="forecast-score">--</strong>
+          </div>
+          <div class="stat-box">
+            <span>Cooldown</span>
+            <strong id="recovery-score">--</strong>
+          </div>
+        </div>
+        <div class="drift-chart">
+          <canvas id="timeline-chart" height="100"></canvas>
+        </div>
+      </section>
+
+      <section class="intel-card">
+        <div class="section-label">What's happening</div>
+        <div class="insight-bubble cyan" id="primary-driver">No dominant signal yet.</div>
+        <div class="section-label secondary-label">Signals we noticed</div>
+        <div class="insight-bubble soft" id="drift-triggers">No signals yet.</div>
+      </section>
+
+      <section class="intel-card">
+        <div class="section-label">Helpful tips</div>
+        <div class="insight-bubble amber" id="drift-tips">Tips will appear here.</div>
+        <div class="insight-bubble green" id="intervention-note">Tips update as the chat moves.</div>
+      </section>
+
+      <section class="intel-card">
+        <div class="section-label">How it feels</div>
+        <div class="insight-bubble cyan" id="their-thinking">Story so far shows up here.</div>
+        <div class="insight-bubble yellow" id="their-mood">Mood shows up here.</div>
+        <div class="insight-bubble pink" id="their-expectation">What they want shows up here.</div>
+      </section>
+    </div>
+  </aside>
+
+  <div id="threat-stop-overlay" class="threat-stop-overlay" style="display:none;">
+    <div class="threat-stop-card">
+      <div class="threat-stop-kicker">Safety pause</div>
+      <h3>This chat feels unsafe.</h3>
+      <p id="threat-stop-text">You cannot continue. Exit the room and return to the home page.</p>
+      <button class="primary-btn wide-btn" onclick="exitThreatSession()">Exit to Home</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="page-credit">
+  <div class="credit-lines">
+    <span class="credit-line">🛡️ Made with trust</span>
+    <span class="credit-line">✨ Team Grey Hats</span>
+    <span class="credit-line">Lead: Adarsh Arya</span>
+  </div>
+  <div class="social-links">
+    <a class="social-link" href="https://github.com/itsaddyon" target="_blank" rel="noopener" aria-label="GitHub">
+      <svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.86 8.17 6.84 9.49.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.71-2.78.61-3.37-1.2-3.37-1.2-.46-1.18-1.12-1.5-1.12-1.5-.91-.62.07-.61.07-.61 1 .08 1.52 1.03 1.52 1.03.9 1.52 2.36 1.08 2.94.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.28.1-2.67 0 0 .84-.27 2.75 1.02A9.5 9.5 0 0 1 12 6.8c.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.39.2 2.42.1 2.67.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10 10 0 0 0 22 12c0-5.52-4.48-10-10-10z" fill="currentColor"/>
+      </svg>
+    </a>
+    <a class="social-link" href="https://instagram.com/itsaddyon" target="_blank" rel="noopener" aria-label="Instagram">
+      <svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm10 2H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3zm-5 3.5A5.5 5.5 0 1 1 6.5 13 5.5 5.5 0 0 1 12 7.5zm0 2A3.5 3.5 0 1 0 15.5 13 3.5 3.5 0 0 0 12 9.5zm6.25-2.75a1.25 1.25 0 1 1-1.25 1.25 1.25 1.25 0 0 1 1.25-1.25z" fill="currentColor"/>
+      </svg>
+    </a>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
