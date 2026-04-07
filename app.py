@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """Sidechick — Real-Time Chat Companion."""
-
+import eventlet
+eventlet.monkey_patch()
 import random, os, json, requests, time, hashlib, csv, io, secrets
 from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from textblob import TextBlob
 from datetime import datetime
 from sequence_model import build_bootstrapped_sequence_model, dataset_bundle
-import eventlet
-eventlet.monkey_patch()
+
 
 try:
     from dotenv import load_dotenv
@@ -28,8 +28,7 @@ app.config['SECRET_KEY'] = secret_key
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '*').strip()
 if cors_origins != '*':
     cors_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
-socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='threading')
-
+socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='eventlet')
 rooms = {}  # room_id -> { history: [], users: {} }
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "artifacts")
@@ -213,62 +212,6 @@ def detect_mood(text):
     return "NEUTRAL"
 
 
-def detect_thinking(text):
-    mood = detect_mood(text)
-    t = text.lower()
-    if mood == "THREATENING":   return "😡 Sending danger signals — this is a red flag"
-    if mood == "ANGRY":
-        if "whatever" in t or "fine" in t: return "😠 Done arguing — silent treatment mode activated"
-        if "seriously" in t:               return "🙄 Can't believe this is even happening rn"
-        return "😡 Fully fuming, trying to hold it together"
-    if mood == "SAD":
-        if "alone" in t or "nobody" in t:  return "😢 Feeling completely isolated tbh"
-        return "💔 Heart is actually hurting rn"
-    if mood == "SCARED":   return "😨 Genuinely anxious — needs reassurance ASAP"
-    if mood == "LOVING":   return "💙 Actually really cares, this is sincere fr"
-    if mood == "HAPPY":    return "😊 Genuinely in a good mood, vibes are UP"
-    if len(text.split()) <= 3: return "🤷 Just making small talk, nothing deep"
-    return "💭 Thinking clearly, low emotional charge"
-
-def detect_expectation(text, mood):
-    t = text.lower()
-    if has_threat(text):
-        return "Wants you to back off right now."
-    if any(k in t for k in ["why", "what happened", "explain", "make sense", "how could"]):
-        return "Wants a real explanation, not vibes."
-    if any(k in t for k in ["sorry", "my bad", "i messed up", "apolog"]):
-        return "Wants you to forgive them and move on."
-    if any(k in t for k in ["are you okay", "u ok", "you good", "you alright"]):
-        return "Wants a clear update on how you feel."
-    if any(k in t for k in ["miss you", "love you", "need you"]):
-        return "Wants affection back, lowkey."
-    if mood in ("ANGRY", "UPSET"):
-        return "Wants either an apology or a solid explanation."
-    if mood in ("SAD", "SCARED"):
-        return "Wants reassurance and a calm reply."
-    return "Wants clarity and a chill response."
-
-def classify_escalation(history, latest):
-    if has_threat(latest):
-        return 4, "🚨 RED FLAG", "That's literally a threat. Screenshot everything and block NOW."
-    recent = history[-6:] if len(history) >= 3 else history
-    avg_p = sum(h.get('p', 0) for h in recent) / max(len(recent), 1)
-    trend = (recent[-1].get('p', 0) - recent[0].get('p', 0)) if len(recent) >= 2 else 0
-    harsh_count = sum(1 for h in recent if h.get('harsh', False))
-    if has_harsh(latest) and (harsh_count >= 2 or avg_p < -0.3):
-        return 3, "☠️ Toxic Zone", "This convo is fully toxic. You don't owe them your energy — just leave."
-    if has_harsh(latest):
-        return 2, "🔥 Getting Heated", "Things are heating up fr. Take a breath before you reply."
-    if has_sexual(latest):
-        return 2, "🔥 Getting Heated", "They're pushing boundaries. You're not obligated to engage."
-    if has_manipulation(latest):
-        return 1, "⚠️ Feels Off", "They're trying to get in your head. Stay grounded."
-    if avg_p < -0.35 or trend < -0.5:
-        return 2, "🔥 Getting Heated", "This convo has been going downhill. Might be time to pause."
-    if avg_p < -0.15:
-        return 1, "⚠️ Feels Off", "Vibes are getting tense. Watch how you phrase things."
-    return 0, "✅ All Good", ""
-
 def _caps_ratio(text):
     letters = [c for c in text if c.isalpha()]
     if not letters:
@@ -323,132 +266,6 @@ def ai_fact_check(text):
         }
     except Exception:
         return None
-
-def compute_behavioral_drift(history, latest_text):
-    """Return sequential drift, forecast, and intervention metadata."""
-    combined = history[-7:] if len(history) >= 7 else history[:]
-    combined = combined + [{
-        'text': latest_text,
-        'p': TextBlob(latest_text).sentiment.polarity,
-        'mood': detect_mood(latest_text),
-        'harsh': has_harsh(latest_text),
-        'sexual': has_sexual(latest_text),
-        'manip': has_manipulation(latest_text)
-    }]
-    if len(combined) < 2:
-        return {
-            'drift_score': 5,
-            'risk_score': 8,
-            'risk_level': 'Low',
-            'forecast_score': 12,
-            'forecast_label': 'Low',
-            'stage': 'Baseline',
-            'stage_code': 'S0',
-            'momentum': 0,
-            'volatility': 0,
-            'recovery_score': 82,
-            'intervention_window': 'Observe',
-            'primary_driver': 'Insufficient sequence length',
-            'critical_action': 'none',
-            'triggers': ["Not enough messages yet."],
-            'tips': ["Keep monitoring for consistent tone change."],
-            'intervention': "No intervention needed yet."
-        }
-    polarities = [h.get('p', 0) for h in combined]
-    slope = polarities[-1] - polarities[0]
-    volatility = sum(abs(polarities[i] - polarities[i - 1]) for i in range(1, len(polarities))) / (len(polarities) - 1)
-    tox_hits = sum(1 for h in combined if h.get('harsh') or h.get('sexual') or h.get('manip'))
-    short_replies = sum(1 for h in combined if len(h.get('text', '').split()) <= 3)
-    caps_ratio = _caps_ratio(latest_text)
-    sentiment_direction = max(0, -slope)
-    momentum = (
-        sentiment_direction * 45 +
-        volatility * 35 +
-        tox_hits * 10 +
-        short_replies * 5 +
-        caps_ratio * 10
-    )
-    momentum = int(max(0, min(100, momentum)))
-
-    drift_score = (
-        abs(slope) * 40 +
-        volatility * 40 +
-        tox_hits * 12 +
-        short_replies * 6 +
-        caps_ratio * 20
-    )
-    drift_score = int(max(0, min(100, drift_score)))
-
-    risk_score = int(max(0, min(100, drift_score * 0.6 + tox_hits * 20 + (caps_ratio * 20))))
-    risk_level = "Low" if risk_score < 30 else "Medium" if risk_score < 60 else "High"
-    forecast_score = int(max(0, min(100, risk_score * 0.65 + momentum * 0.35 + (10 if slope < 0 else 0))))
-    forecast_label = "Low" if forecast_score < 30 else "Guarded" if forecast_score < 55 else "Elevated" if forecast_score < 75 else "Severe"
-    recovery_score = int(max(0, min(100, 100 - (volatility * 45 + tox_hits * 12 + sentiment_direction * 35))))
-
-    if risk_score >= 75:
-        stage = "Critical Escalation"
-        intervention_window = "Immediate"
-    elif risk_score >= 55:
-        stage = "Toxic Drift"
-        intervention_window = "Now"
-    elif risk_score >= 30:
-        stage = "Emerging Escalation"
-        intervention_window = "Early"
-    else:
-        stage = "Stable / Recoverable"
-        intervention_window = "Monitor"
-
-    triggers = []
-    if abs(slope) > 0.35:
-        triggers.append("Tone shifted fast.")
-    if volatility > 0.35:
-        triggers.append("Mood swings detected.")
-    if tox_hits > 0:
-        triggers.append("Harsh or boundary-pushing words.")
-    if short_replies >= 2:
-        triggers.append("Short replies / disengaging vibes.")
-    if caps_ratio > 0.35:
-        triggers.append("ALL-CAPS intensity.")
-    if not triggers:
-        triggers.append("Conversation is stable.")
-
-    driver_scores = {
-        "rapid tone deterioration": abs(slope) * 100,
-        "volatility spike": volatility * 100,
-        "harmful lexical cues": tox_hits * 20,
-        "withdrawal / short replies": short_replies * 12,
-        "all-caps intensity": caps_ratio * 100
-    }
-    primary_driver = max(driver_scores, key=driver_scores.get)
-
-    tips = []
-    if risk_level == "High":
-        tips.append("Trigger moderation or human review immediately.")
-        tips.append("Do not reinforce the hostile exchange.")
-        intervention = "Escalate to safety workflow or pause the conversation."
-    elif risk_level == "Medium":
-        tips.append("Inject a calming prompt or friction before reply.")
-        tips.append("Monitor the next 1-2 turns for acceleration.")
-        intervention = "Early intervention recommended before the next reply."
-    else:
-        tips.append("Maintain low-friction, neutral communication.")
-        intervention = "Continue passive monitoring."
-    return {
-        'drift_score': drift_score,
-        'risk_score': risk_score,
-        'risk_level': risk_level,
-        'forecast_score': forecast_score,
-        'forecast_label': forecast_label,
-        'stage': stage,
-        'momentum': momentum,
-        'volatility': int(max(0, min(100, volatility * 100))),
-        'recovery_score': recovery_score,
-        'intervention_window': intervention_window,
-        'primary_driver': primary_driver,
-        'triggers': triggers[:3],
-        'tips': tips[:2],
-        'intervention': intervention
-    }
 
 def bestie_comment(text, polarity, level, mood="NEUTRAL"):
     if level == 4: return random.choice([
@@ -553,29 +370,6 @@ def generate_suggestions(text, polarity, level, last_message=None, last_mood=Non
         boundary = "I want to fix this, but not in a fight."
     return {"ack": ack[:120], "clarify": clarify[:120], "boundary": boundary[:120]}
 
-def predict_response(polarity, level):
-    if level >= 3: return random.choice([
-        "They might double down and get worse 😬",
-        "This could spiral fast. Be ready to just exit the chat."
-    ])
-    if level == 2: return random.choice([
-        "They'll probably clap back harder 🔥",
-        "Could go full argument from here ngl",
-        "50/50 — they might calm down or blow up"
-    ])
-    if polarity > 0.3: return random.choice([
-        "They'll probably smile and reply fast 🥰",
-        "Good vibes in, good vibes out bestie ✨"
-    ])
-    if polarity < -0.2: return random.choice([
-        "They might get defensive and clap back 😬",
-        "Could spiral into a long argument ngl"
-    ])
-    return random.choice([
-        "Hard to say, depends on their mood rn",
-        "Probably a chill response back tbh"
-    ])
-
 def confidence_score(text, polarity, level):
     if level == 4: return 5
     if level == 3: return 12
@@ -608,104 +402,6 @@ def ghost_reply(polarity, level):
         "I didn't mean it like that. Can we reset?"
     ])
     return random.choice(["Okay, I hear you.", "That makes sense to me."])
-
-def ai_suggest_reply(text, mood, level, tone="balanced"):
-    """Use OpenRouter to generate a smart, empathetic reply suggestion."""
-    system = (
-        "You are Sidechick, a GenZ best friend who helps people communicate better. "
-        f"Tone: {tone}. "
-        "Given a chat message and its emotional context, suggest ONE short, genuine, "
-        "non-toxic reply (max 2 sentences). Use casual GenZ language. "
-        "If the message is toxic or threatening, suggest a calm, boundary-setting reply."
-    )
-    user_msg = f"Message: \"{text}\"\nMood detected: {mood}\nEscalation level: {level}/4\nSuggest a reply:"
-    result = ask_ai(system, user_msg, max_tokens=80)
-    return result
-
-def fallback_action_playbook(history_texts):
-    if not history_texts:
-        return None
-    last = history_texts[-1]
-    mood = detect_mood(last)
-    expectation = detect_expectation(last, mood)
-    level, label, alert = classify_escalation([], last)
-    if level >= 3:
-        best_move = "Set a boundary or exit the convo."
-        avoid = "Don\'t match their energy."
-    elif level == 2:
-        best_move = "De-escalate, then ask a calm question."
-        avoid = "Don\'t clap back or pile on."
-    else:
-        best_move = "Keep it clear, short, and kind."
-        avoid = "Don\'t over-explain or spiral."
-    return {
-        "situation": f"Mood reads {mood.lower()}.",
-        "they_want": expectation,
-        "best_move": best_move,
-        "avoid": avoid,
-        "alert": alert if alert else ""
-    }
-
-def ai_summarize_convo(history_texts, tone="balanced"):
-    """Return an actionable playbook, not a generic summary."""
-    if not history_texts:
-        return None
-    convo = "\n".join(history_texts[-10:])
-    system = (
-        "You are Sidechick, a GenZ best friend who gives actionable advice. "
-        f"Tone: {tone}. Return ONLY valid JSON with keys: "
-        "situation, they_want, best_move, avoid, alert. "
-        "Each value must be under 12 words. "
-        "Alert should be empty string if no red flag."
-    )
-    raw = ask_ai(system, f"Conversation:\n{convo}", max_tokens=120)
-    if not raw:
-        return fallback_action_playbook(history_texts)
-    try:
-        cleaned = raw.strip()
-        start = cleaned.find('{')
-        end = cleaned.rfind('}')
-        if start != -1 and end != -1:
-            cleaned = cleaned[start:end + 1]
-        data = json.loads(cleaned)
-        return {
-            "situation": str(data.get("situation", "")).strip(),
-            "they_want": str(data.get("they_want", "")).strip(),
-            "best_move": str(data.get("best_move", "")).strip(),
-            "avoid": str(data.get("avoid", "")).strip(),
-            "alert": str(data.get("alert", "")).strip()
-        }
-    except Exception:
-        return fallback_action_playbook(history_texts)
-
-def ai_infer_other(text, context=None, tone="balanced"):
-    """Infer the other person's thinking/expectation in short GenZ slang."""
-    context = context or []
-    system = (
-        "You are Sidechick, a GenZ best friend. "
-        f"Tone: {tone}. "
-        "Return ONLY valid JSON with keys: thinking, expectation, mood. "
-        "Keep each value under 12 words. "
-        "Mood must be one of: ANGRY, SAD, SCARED, HAPPY, LOVING, NEUTRAL, UPSET, THREATENING."
-    )
-    ctx_lines = []
-    for item in context[-3:]:
-        speaker = item.get('speaker', 'User')
-        ctx_lines.append(f"{speaker}: {item.get('text','')}")
-    ctx_block = "\n".join(ctx_lines)
-    user_msg = f"Recent context:\n{ctx_block}\n\nOther person's message: {text}"
-    raw = ask_ai(system, user_msg, max_tokens=80)
-    if not raw:
-        return None
-    try:
-        cleaned = raw.strip()
-        start = cleaned.find('{')
-        end = cleaned.rfind('}')
-        if start != -1 and end != -1:
-            cleaned = cleaned[start:end + 1]
-        return json.loads(cleaned)
-    except Exception:
-        return None
 
 
 # ── Flask route ─────────────────────────────────────────────────────────────
