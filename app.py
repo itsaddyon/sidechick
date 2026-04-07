@@ -1211,7 +1211,6 @@ def on_fact_check(data):
         emit('fact_check', {'fact': result})
 
 # ── Run ─────────────────────────────────────────────────────────────────────
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
