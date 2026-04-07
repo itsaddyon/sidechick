@@ -7,6 +7,8 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from textblob import TextBlob
 from datetime import datetime
 from sequence_model import build_bootstrapped_sequence_model, dataset_bundle
+import eventlet
+eventlet.monkey_patch()
 
 try:
     from dotenv import load_dotenv
@@ -1513,6 +1515,8 @@ def on_fact_check(data):
         emit('fact_check', {'fact': result})
 
 # ── Run ─────────────────────────────────────────────────────────────────────
-if __name__ == '__main__':
-    print("🚀 Sidechick starting on http://localhost:5000")
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+import os
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port)
