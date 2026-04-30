@@ -68,8 +68,12 @@ SECRET_KEY=your_secure_secret_here
 ## Note on Architecture
 This project is an experimental behavioral-risk dashboard. The forecasting layer utilizes a bootstrapped recurrent model trained locally on synthetic data, designed specifically to demonstrate early-intervention capabilities for online safety moderation.
 
-## Contributors
+## Credits
 
-Team Grey Hats
-Lead - Adarsh Arya
-Build for Scale, For People!🤝
+**Build for People**
+- **Team Grey Hats** (Made with trust)
+- **Lead**: Adarsh Arya
+
+---
+*Created for the community with safety and trust at its core.*
+

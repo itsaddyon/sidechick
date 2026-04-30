@@ -58,15 +58,16 @@ function switchIntelTab(name, evt) {
   if (evt && evt.target) evt.target.classList.add('active');
 }
 
+const isDetectiveOn = () => !document.getElementById('app').classList.contains('ai-off');
+
 function renderSuggestions(sugg) {
   const row = document.getElementById('sugg-row');
   if (!row) return;
   row.innerHTML = '';
   
-  const isDetectiveOn = !document.getElementById('app').classList.contains('ai-off');
-  const isThreatMsg = (currentLevel >= 2); // using currentLevel from updateVibeBadge
+  const isThreatMsg = (currentLevel >= 2);
   
-  if (!isDetectiveOn || !isThreatMsg || !sugg || !Object.keys(sugg).length) {
+  if (!isDetectiveOn() || !isThreatMsg || !sugg || !Object.keys(sugg).length) {
     row.style.display = 'none';
     return;
   }
@@ -349,9 +350,10 @@ function initSidekickControls() {
 function toggleSidekick() {
   const app = document.getElementById('app');
   if (!app) return;
-  const enabled = app.classList.contains('ai-off');
-  setSidekickEnabled(enabled);
-  showDetectiveToast(enabled ? 'Detective mode: on' : 'Detective mode: off');
+  // If it currently has ai-off, we want to enable it (remove ai-off)
+  const currentlyOff = app.classList.contains('ai-off');
+  setSidekickEnabled(currentlyOff);
+  showDetectiveToast(currentlyOff ? 'Detective mode: on' : 'Detective mode: off');
 }
 
 function joinChat() {
@@ -724,10 +726,7 @@ function renderMessage(data) {
   const body = document.createElement('div');
   body.className = 'msg-body';
 
-  const isDetectiveOn = !document.getElementById('app').classList.contains('ai-off');
-  const isThreatMsg = (data.level >= 2 || data.is_toxic || data.alert);
-
-  if (!isMine && data.thinking && isDetectiveOn && isThreatMsg) {
+  if (!isMine && data.thinking && isDetectiveOn() && (data.level >= 2 || data.is_toxic || data.alert)) {
     const thinking = document.createElement('div');
     thinking.className = 'msg-thinking';
     thinking.textContent = data.thinking;
