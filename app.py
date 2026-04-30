@@ -1309,4 +1309,11 @@ def on_fact_check(data):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port)
+    print(f"[*] Starting Sidechick server on port {port}...", flush=True)
+    try:
+        socketio.run(app, host="0.0.0.0", port=port)
+    except Exception as e:
+        import traceback
+        print("CRITICAL STARTUP ERROR:", flush=True)
+        traceback.print_exc()
+        raise
