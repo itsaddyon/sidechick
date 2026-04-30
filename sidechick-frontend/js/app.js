@@ -62,10 +62,16 @@ function renderSuggestions(sugg) {
   const row = document.getElementById('sugg-row');
   if (!row) return;
   row.innerHTML = '';
-  if (!sugg || !Object.keys(sugg).length) {
-    row.innerHTML = '<div class="suggestion-empty">Intervention shortcuts will appear once you type.</div>';
+  
+  const isDetectiveOn = !document.getElementById('app').classList.contains('ai-off');
+  const isThreatMsg = (currentLevel >= 2); // using currentLevel from updateVibeBadge
+  
+  if (!isDetectiveOn || !isThreatMsg || !sugg || !Object.keys(sugg).length) {
+    row.style.display = 'none';
     return;
   }
+  
+  row.style.display = 'flex';
   Object.entries(sugg).forEach(([key, text]) => {
     const chip = document.createElement('button');
     chip.className = 'sugg-chip ' + key;
@@ -613,6 +619,16 @@ function updateVibeBadge(level, label, alertMsg, stageCode, criticalAction) {
     if (note) note.textContent = 'This chat should pause for safety.';
     showThreatStop(alertMsg || 'This chat feels unsafe. You cannot continue.');
   }
+
+  const warningDiv = document.getElementById('composer-warning');
+  if (warningDiv) {
+    if (criticalAction === 'warn_terminate') {
+      warningDiv.textContent = 'Warning: For safety purposes, this chat will end automatically if you send this threatening message.';
+      warningDiv.style.display = 'block';
+    } else {
+      warningDiv.style.display = 'none';
+    }
+  }
 }
 
 function showThreatStop(message) {
@@ -630,7 +646,9 @@ function hideThreatStop() {
   const overlay = document.getElementById('threat-stop-overlay');
   const input = document.getElementById('msg-input');
   const sendBtn = document.getElementById('send-btn');
+  const warningDiv = document.getElementById('composer-warning');
   if (overlay) overlay.style.display = 'none';
+  if (warningDiv) warningDiv.style.display = 'none';
   if (input) input.disabled = false;
   if (sendBtn) sendBtn.disabled = false;
 }
@@ -706,7 +724,10 @@ function renderMessage(data) {
   const body = document.createElement('div');
   body.className = 'msg-body';
 
-  if (!isMine && data.thinking) {
+  const isDetectiveOn = !document.getElementById('app').classList.contains('ai-off');
+  const isThreatMsg = (data.level >= 2 || data.is_toxic || data.alert);
+
+  if (!isMine && data.thinking && isDetectiveOn && isThreatMsg) {
     const thinking = document.createElement('div');
     thinking.className = 'msg-thinking';
     thinking.textContent = data.thinking;

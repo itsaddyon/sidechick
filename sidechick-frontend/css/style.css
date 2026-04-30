@@ -1107,6 +1107,7 @@ body.theme-dark .panel-select:focus {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  max-height: 100vh;
 }
 
 .app-topbar {
@@ -1240,10 +1241,22 @@ body.theme-dark .panel-select:focus {
 
 .workspace-column {
   min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
+}
+
+/* Detective Theme active (not ai-off) */
+.app-screen:not(.ai-off) .messages {
+  background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0V0zm20 20h20v20H20V20zM0 20h20v20H0V20z' fill='%231d273a' fill-opacity='0.15' fill-rule='evenodd'/%3E%3C/svg%3E"), radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.4), rgba(2, 6, 23, 0.9));
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+}
+
+body.theme-dark .app-screen:not(.ai-off) .messages {
+  background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h40v40H0V0zm20 20h20v20H20V20zM0 20h20v20H0V20z' fill='%234ce8ff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E"), radial-gradient(circle at 50% 50%, rgba(10, 16, 28, 0.8), rgba(2, 6, 23, 0.95));
 }
 
 .workspace-header,
@@ -1339,7 +1352,7 @@ body.theme-dark .panel-select:focus {
   flex-direction: column;
   gap: 14px;
   position: relative;
-  min-height: 280px;
+  min-height: 0;
 }
 
 .messages-empty {
@@ -1759,6 +1772,16 @@ body.theme-dark .empty-prompts button {
   background: rgba(12, 18, 36, 0.8);
   color: var(--text);
   border-color: rgba(76, 232, 255, 0.2);
+}
+
+body.theme-dark .sugg-chip {
+  background: rgba(12, 18, 36, 0.8);
+  color: var(--text);
+  border-color: rgba(76, 232, 255, 0.2);
+}
+
+body.theme-dark .sugg-chip:hover {
+  background: rgba(76, 232, 255, 0.15);
 }
 
 body.theme-dark .ghost-btn.danger-btn {

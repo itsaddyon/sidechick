@@ -5,7 +5,7 @@ eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
 import random, os, json, requests, time, hashlib, csv, io, secrets
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from textblob import TextBlob
 from datetime import datetime
 from sequence_model import build_bootstrapped_sequence_model, dataset_bundle
@@ -654,7 +654,7 @@ def compute_behavioral_drift(history, latest_text):
             "Escalate to safety or emergency response workflow."
         ]
         intervention = "Terminate the session now and hand off to a human responder."
-        critical_action = "terminate_chat"
+        critical_action = "warn_terminate"
     elif critical_code == "S4-B":
         tips = [
             "End the chat and block further engagement.",
@@ -1060,6 +1060,16 @@ def on_message(data):
 
     is_toxic = has_harsh(text) or has_threat(text) or has_severe_abuse(text)
 
+    # If the user actually sends a severe threat, terminate the chat
+    if has_threat(text) or has_severe_abuse(text):
+        emit('system', {'msg': 'The chat session was automatically terminated because the other user sent a dangerous or threatening message.'}, to=room, include_self=False)
+        emit('system', {'msg': 'Chat terminated for safety violations.'}, to=request.sid)
+        for sid in list(rooms[room]['users'].keys()):
+            disconnect(sid)
+        if room in rooms:
+            del rooms[room]
+        return
+
     # Broadcast the message with metadata
     emit('message', {
         'username': username,
@@ -1070,6 +1080,8 @@ def on_message(data):
         'expecting': expecting,
         'polarity': polarity,
         'is_toxic': bool(is_toxic),
+        'level': level,
+        'alert': alert,
         'timestamp': datetime.now().strftime('%H:%M'),
     }, to=room)
 

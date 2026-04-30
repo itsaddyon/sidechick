@@ -1,43 +1,30 @@
-# Sidechick
+# Sidechick: AI-Powered Behavioral Risk Chat
 
-Sidechick is a private-room chat experience with optional safety insights. It focuses on the actual problem statement:
+Sidechick is a private-room chat experience designed with advanced safety analytics and behavioral drift forecasting. It is specifically built to address the challenge of detecting gradual shifts that lead to toxic or harmful online interactions.
 
-- Online platforms struggle to detect gradual behavioral shifts that lead to toxic interactions.
-- The system should identify behavioral drift and forecast escalation toward harmful content.
+## Core Features
 
-## Objective
+- **Real-Time Sequential Monitoring**: Tracks recent message sequences instead of isolated turns to compute behavioral drift and escalation risk.
+- **Pre-Termination Warnings**: When a user drafts a highly dangerous or threatening message, Sidechick intervenes immediately. It presents a warning to the user before they can send it. If sent, it safely terminates the chat session, notifies the other user, and permanently destroys the room to maintain platform safety.
+- **Detective Mode**: A specialized UI mode that surfaces the underlying AI context. When activated, it transforms the user interface with a sleek investigation theme and selectively reveals AI "thinking" and tactical suggestions *only* when the system detects rising tension.
+- **Response Playbooks**: Dynamically generates ghost replies and interventions tailored to the exact escalation stage.
+- **Model Training Integration**: Includes a local retraining script and saved model pipeline for forecasting sequential behavioral drift.
 
-Design a predictive framework that enables early intervention through sequential modeling of user behavior patterns.
+## Architecture & Deployment
 
-## What This Version Does
+This project uses a split deployment architecture to maximize speed and cost efficiency:
+- **Frontend (Vercel)**: A static, highly optimized HTML/CSS/JS interface.
+- **Backend (Render)**: A Python Flask/Socket.IO backend handling the realtime connections, machine learning inference, and message routing.
 
-- Monitors live conversations in shared rooms
-- Tracks recent message sequences instead of isolated turns
-- Computes behavioral drift, escalation risk, and next-turn forecast signals
-- Highlights dominant drivers such as rapid tone deterioration, volatility, or harmful lexical cues
-- Surfaces intervention windows and response playbooks
-- Lets users enter Detective Mode to reveal advanced analytics
-- Includes an optional neon dark theme toggle
-- Exports monitored sessions to JSON or CSV for dataset creation
-- Includes a retraining script and saved model artifact pipeline
+### Compiling the Frontend
+If you make changes to the frontend UI templates in the Flask backend, you must compile them into static files before deploying to Vercel.
 
-## Core Outputs
+```bash
+python build_frontend.py
+```
+This script automatically strips Flask-specific template logic (like `url_for()`), injects environmental routing (e.g. `BACKEND_URL`), and outputs production-ready static assets into the `sidechick-frontend/` directory. You then push this directory to your Vercel-linked repository.
 
-- `drift_score`: how far the sequence is moving from stable behavior
-- `risk_score`: current escalation severity
-- `forecast_score`: short-horizon likelihood of harmful continuation
-- `stage`: current sequence state such as baseline, emerging escalation, or toxic drift
-- `primary_driver`: strongest contributing signal behind the forecast
-- `intervention`: suggested early action
-
-## Tech Stack
-
-- Backend: Python, Flask, Flask-SocketIO
-- NLP: TextBlob plus a bootstrapped recurrent sequence model
-- Frontend: HTML, CSS, Vanilla JavaScript
-- Optional AI assist: OpenRouter
-
-## Quick Start
+## Quick Start (Local Development)
 
 ```bash
 pip install -r requirements.txt
@@ -45,39 +32,38 @@ python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptr
 python app.py
 ```
 
-Open `http://127.0.0.1:5000`.
+Open `http://127.0.0.1:5000` in your browser.
 
-## Retraining
+## Tech Stack
 
-Run:
+- **Backend**: Python 3.11, Flask 3.0.3, Flask-SocketIO 5.3.6 (Eventlet async mode)
+- **NLP**: TextBlob + Bootstrapped Recurrent Sequence Model
+- **Frontend**: Vanilla HTML/CSS/JS with custom CSS architecture
+- **Optional AI Assist**: OpenRouter Integration
+
+## Model Retraining
+
+To retrain the sequential drift forecasting model on new synthetic toxic-drift sequences:
 
 ```bash
 python train_sequence_model.py
 ```
 
-This writes:
+This updates the model artifacts (`sequence_model.json` and `sequence_model_report.json`), which the backend will automatically load upon its next boot.
 
-- `artifacts/sequence_model.json`
-- `artifacts/sequence_model_report.json`
+## Optional Configuration
 
-The app automatically loads the saved artifact on startup if it exists.
-
-## Export
-
-During a live session you can export the monitored conversation as:
-
-- JSON
-- CSV
-
-## Optional AI Setup
-
-Create `.env` with:
+Create a `.env` file in the root directory:
 
 ```env
+# Optional: External AI APIs for deeper fact-checking or inferences
 OPENROUTER_API_KEY=your_key_here
 OPENROUTER_MODEL=openrouter/auto
+
+# Required for Render / Cross-Origin Deployments
+CORS_ALLOWED_ORIGINS=*
+SECRET_KEY=your_secure_secret_here
 ```
 
-## Notes
-
-This project now presents itself as a predictive behavioral-risk dashboard rather than a casual chat assistant. It now includes a small bootstrapped recurrent model trained locally on synthetic toxic-drift sequences, so the forecasting layer is learned and sequential, but still not production-grade or trained on real platform data.
+## Note on Architecture
+This project is an experimental behavioral-risk dashboard. The forecasting layer utilizes a bootstrapped recurrent model trained locally on synthetic data, designed specifically to demonstrate early-intervention capabilities for online safety moderation.
