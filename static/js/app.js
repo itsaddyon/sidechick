@@ -1,4 +1,7 @@
-const socket = io();
+const BACKEND_URL = window.location.hostname.includes('vercel.app') 
+  ? 'https://sidechick-syej.onrender.com' 
+  : '';
+const socket = io(BACKEND_URL);
 
 let myName = '';
 let myRoom = '';
@@ -18,6 +21,8 @@ let messageHistory = [];
 let lastInferRequestId = null;
 let themeMode = 'light';
 let toastTimer = null;
+let roomMode = 'manual';
+let openMatchWaiting = false;
 
 const MOOD_ICONS = {
   ANGRY: 'ANG',
@@ -93,18 +98,19 @@ function showDetectiveToast(message) {
 
 function setSidekickEnabled(enabled) {
   const app = document.getElementById('app');
+  const shell = document.querySelector('#app .app-shell');
   const panel = document.getElementById('ai-panel');
   const btn = document.getElementById('toggle-ai-btn');
   if (!app || !panel || !btn) return;
   if (enabled) {
     app.classList.remove('ai-off');
+    if (shell) shell.classList.remove('ai-off');
     panel.style.display = 'flex';
-    btn.textContent = '🕵️';
     btn.classList.add('active');
   } else {
     app.classList.add('ai-off');
+    if (shell) shell.classList.add('ai-off');
     panel.style.display = 'none';
-    btn.textContent = '🕵️';
     btn.classList.remove('active');
   }
   btn.title = enabled ? 'Detective Mode On' : 'Detective Mode Off';
@@ -122,15 +128,92 @@ function setThemeMode(mode) {
 
 function updateThemeToggles() {
   document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
-    btn.textContent = themeMode === 'dark' ? '☀️' : '🌙';
+    const icon = btn.querySelector('.btn-icon');
+    if (icon) {
+      icon.textContent = themeMode === 'dark' ? '☀' : '☾';
+    } else {
+      btn.textContent = themeMode === 'dark' ? '☀' : '☾';
+    }
     btn.title = themeMode === 'dark' ? 'Light Mode' : 'Dark Mode';
     btn.setAttribute('aria-label', btn.title);
     btn.setAttribute('aria-pressed', themeMode === 'dark' ? 'true' : 'false');
   });
 }
 
+function toggleTopbarMenu(force) {
+  const actions = document.querySelector('.topbar-actions');
+  const btn = document.getElementById('mobile-menu-btn');
+  if (!actions || !btn) return;
+  const next = typeof force === 'boolean' ? force : !actions.classList.contains('is-open');
+  actions.classList.toggle('is-open', next);
+  btn.setAttribute('aria-expanded', next ? 'true' : 'false');
+}
+
 function toggleTheme() {
   setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
+}
+
+function setMatchStatus(message, state = '') {
+  const el = document.getElementById('match-status');
+  if (!el) return;
+  el.textContent = message || '';
+  el.className = 'match-status';
+  if (state) el.classList.add(state);
+}
+
+function setOpenMatchWaiting(waiting) {
+  openMatchWaiting = !!waiting;
+  const startBtn = document.getElementById('start-chat-btn');
+  const cancelBtn = document.getElementById('cancel-match-btn');
+  if (startBtn) {
+    startBtn.disabled = openMatchWaiting;
+    startBtn.textContent = openMatchWaiting ? 'Finding Match...' : (roomMode === 'open' ? 'Find Open Match' : 'Start Chat');
+  }
+  if (cancelBtn) cancelBtn.classList.toggle('is-visible', openMatchWaiting);
+}
+
+function setRoomMode(mode) {
+  if (openMatchWaiting) cancelOpenMatch();
+  roomMode = mode === 'open' ? 'open' : 'manual';
+  const manualBtn = document.getElementById('manual-room-btn');
+  const openBtn = document.getElementById('open-room-btn');
+  const input = document.getElementById('room-input');
+  const openNote = document.getElementById('open-room-note');
+  const roomCodeRow = document.querySelector('.room-code-row');
+  const roomCodeLabel = document.querySelector('label[for="room-input"]');
+  const startBtn = document.getElementById('start-chat-btn');
+  if (manualBtn) manualBtn.classList.toggle('active', roomMode === 'manual');
+  if (openBtn) openBtn.classList.toggle('active', roomMode === 'open');
+  if (openNote) openNote.classList.toggle('is-visible', roomMode === 'open');
+  if (roomCodeRow) roomCodeRow.classList.toggle('is-hidden', roomMode === 'open');
+  if (roomCodeLabel) roomCodeLabel.classList.toggle('is-hidden', roomMode === 'open');
+  if (startBtn) startBtn.textContent = roomMode === 'open' ? 'Find Open Match' : 'Start Chat';
+  setMatchStatus('', '');
+  setOpenMatchWaiting(false);
+  if (!input) return;
+  input.readOnly = roomMode === 'open';
+  input.placeholder = 'Shared room or case ID';
+  if (roomMode === 'open') {
+    input.value = '';
+  } else {
+    input.value = '';
+    input.focus();
+  }
+}
+
+function startOpenMatch(username) {
+  if (!socket.connected) socket.connect();
+  setOpenMatchWaiting(true);
+  setMatchStatus('Waiting for another open room user...', 'waiting');
+  socket.emit('open_match_request', { username });
+}
+
+function cancelOpenMatch() {
+  if (openMatchWaiting && socket.connected) {
+    socket.emit('open_match_cancel');
+  }
+  setOpenMatchWaiting(false);
+  setMatchStatus('', '');
 }
 
 function initTheme() {
@@ -267,14 +350,26 @@ function toggleSidekick() {
 
 function joinChat() {
   const u = document.getElementById('username-input').value.trim();
+  if (!u) {
+    alert('Enter your name first.');
+    return;
+  }
+  if (roomMode === 'open') {
+    startOpenMatch(u);
+    return;
+  }
   const r = document.getElementById('room-input').value.trim();
   if (!u || !r) {
     alert('Enter your name and room code.');
     return;
   }
 
-  myName = u;
-  myRoom = r;
+  enterRoom(u, r, "You're chatting as " + u + '.');
+}
+
+function enterRoom(username, room, subText) {
+  myName = username;
+  myRoom = room;
   ghostText = '';
   timelineData = [];
   messageHistory = [];
@@ -283,17 +378,23 @@ function joinChat() {
   document.getElementById('messages').innerHTML = '';
   const empty = document.getElementById('messages-empty');
   if (empty) empty.style.display = 'grid';
-  socket.emit('join', { username: u, room: r });
+
+  // Reconnect if socket was disconnected by leaveChat()
+  if (!socket.connected) socket.connect();
+
+  socket.emit('join', { username, room });
 
   document.getElementById('lobby').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.body.classList.add('app-active');
-  document.getElementById('header-title').textContent = 'Room ' + r;
-  document.getElementById('header-sub').textContent = "You're chatting as " + u + '.';
-  document.getElementById('room-badge').textContent = '#' + r;
+  document.getElementById('header-title').textContent = 'Room ' + room;
+  document.getElementById('header-sub').textContent = subText || ("You're chatting as " + username + '.');
+  document.getElementById('room-badge').textContent = '#' + room;
+  updateParticipants({ users: [username], count: 1 });
+  toggleTopbarMenu(false);
   const heroCallout = document.getElementById('hero-callout');
   if (heroCallout) {
-    heroCallout.textContent = 'Your chat stays in this room. Only people with the code can join.';
+    heroCallout.textContent = 'Your chat stays in this room. No admin or creator view is built to read it.';
   }
 
   initChart();
@@ -312,13 +413,78 @@ function leaveChat() {
   document.body.classList.remove('app-active');
   myName = '';
   myRoom = '';
+  setOpenMatchWaiting(false);
+  setMatchStatus('', '');
+  toggleTopbarMenu(false);
   const empty = document.getElementById('messages-empty');
   if (empty) empty.style.display = 'grid';
   socket.disconnect();
-  socket.connect();
+  // Do NOT call socket.connect() here — reconnect happens in joinChat()
+}
+
+function usePrompt(text) {
+  const input = document.getElementById('msg-input');
+  if (!input) return;
+  input.value = text;
+  autoResizeComposer();
+  input.focus();
+}
+
+function updateParticipants(data) {
+  const countEl = document.getElementById('participant-count');
+  const listEl = document.getElementById('participant-list');
+  const users = Array.isArray(data && data.users) ? data.users : [];
+  const count = data && data.count ? data.count : users.length;
+  if (countEl) countEl.textContent = count === 1 ? '1 participant' : count + ' participants';
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  users.slice(0, 6).forEach((name) => {
+    const pill = document.createElement('span');
+    pill.className = 'participant-pill';
+    pill.textContent = name === myName ? name + ' (you)' : name;
+    listEl.appendChild(pill);
+  });
+  if (users.length > 6) {
+    const more = document.createElement('span');
+    more.className = 'participant-pill';
+    more.textContent = '+' + (users.length - 6) + ' more';
+    listEl.appendChild(more);
+  }
+}
+
+async function copyRoomCode() {
+  if (!myRoom) return;
+  const value = myRoom;
+  let copied = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      copied = true;
+    }
+  } catch (err) {
+    copied = false;
+  }
+  if (!copied) {
+    const temp = document.createElement('textarea');
+    temp.value = value;
+    temp.setAttribute('readonly', '');
+    temp.style.position = 'fixed';
+    temp.style.opacity = '0';
+    document.body.appendChild(temp);
+    temp.select();
+    try {
+      copied = document.execCommand('copy');
+    } catch (err) {
+      copied = false;
+    }
+    temp.remove();
+  }
+  showDetectiveToast(copied ? 'Room code copied' : 'Could not copy room code');
+  toggleTopbarMenu(false);
 }
 
 document.addEventListener('keydown', (event) => {
+  if (document.body.classList.contains('intro-active')) return;
   if (event.key === 'Enter' && document.getElementById('lobby').style.display !== 'none') {
     joinChat();
   }
@@ -529,6 +695,10 @@ function renderMessage(data) {
   const div = document.createElement('div');
   div.className = 'msg slide-in ' + (isMine ? 'mine' : 'theirs');
 
+  if (data.is_toxic && !isMine) {
+    div.classList.add('message-blurred');
+  }
+
   const avatar = document.createElement('div');
   avatar.className = 'msg-avatar';
   avatar.textContent = (data.username || '?').charAt(0).toUpperCase();
@@ -546,6 +716,16 @@ function renderMessage(data) {
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
   bubble.textContent = data.text;
+  
+  if (data.is_toxic && !isMine) {
+    bubble.title = "Message hidden. Click to reveal.";
+    bubble.onclick = function() {
+      div.classList.remove('message-blurred');
+      div.classList.add('message-revealed');
+      bubble.title = "";
+    };
+  }
+  
   body.appendChild(bubble);
 
   const meta = document.createElement('div');
@@ -562,7 +742,12 @@ function renderMessage(data) {
   }
 
   const feed = document.getElementById('messages');
-  feed.appendChild(div);
+  const indicator = document.getElementById('typing-indicator');
+  if (indicator) {
+    feed.insertBefore(div, indicator);
+  } else {
+    feed.appendChild(div);
+  }
   feed.scrollTop = feed.scrollHeight;
   const empty = document.getElementById('messages-empty');
   if (empty) empty.style.display = 'none';
@@ -630,6 +815,37 @@ socket.on('user_joined', (data) => {
 
 socket.on('user_left', (data) => {
   document.getElementById('header-sub').textContent = data.username + ' left the room.';
+});
+
+socket.on('join_error', (data) => {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('lobby').style.display = 'flex';
+  document.body.classList.remove('app-active');
+  myRoom = '';
+  setOpenMatchWaiting(false);
+  setMatchStatus((data && data.message) || 'Could not join this room.', 'cancelled');
+  showDetectiveToast((data && data.message) || 'Could not join this room.');
+});
+
+socket.on('room_users', updateParticipants);
+
+socket.on('open_match_waiting', (data) => {
+  setOpenMatchWaiting(true);
+  setMatchStatus((data && data.message) || 'Waiting for another open room user...', 'waiting');
+});
+
+socket.on('open_match_cancelled', (data) => {
+  setOpenMatchWaiting(false);
+  setMatchStatus((data && data.message) || '', 'cancelled');
+});
+
+socket.on('open_match_found', (data) => {
+  if (!data || !data.room) return;
+  const username = document.getElementById('username-input').value.trim();
+  if (!username) return;
+  setOpenMatchWaiting(false);
+  setMatchStatus('Match found. Opening room...', 'found');
+  enterRoom(username, data.room, data.peer ? 'Matched with ' + data.peer + ' in an open room.' : 'Matched in an open room.');
 });
 
 socket.on('ai_config', (data) => {
@@ -700,10 +916,36 @@ socket.on('ai_summary', (data) => {
   if (btn) btn.classList.remove('loading');
 });
 
+let theirTypingTimer = null;
+socket.on('typing_status', (data) => {
+  if (data.username === myName) return;
+  const feed = document.getElementById('messages');
+  let indicator = document.getElementById('typing-indicator');
+  
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'typing-indicator';
+    indicator.className = 'msg slide-in theirs typing-indicator-msg';
+    indicator.innerHTML = `
+      <div class="msg-avatar">${data.username.charAt(0).toUpperCase()}</div>
+      <div class="msg-body"><div class="msg-bubble typing-dots"><span>.</span><span>.</span><span>.</span></div></div>
+    `;
+    feed.appendChild(indicator);
+    feed.scrollTop = feed.scrollHeight;
+  }
+  
+  clearTimeout(theirTypingTimer);
+  theirTypingTimer = setTimeout(() => {
+    const ind = document.getElementById('typing-indicator');
+    if (ind) ind.remove();
+  }, 2000);
+});
+
 function onTyping() {
   autoResizeComposer();
   const text = document.getElementById('msg-input').value;
   clearTimeout(typingTimer);
+  socket.emit('typing', { username: myName, room: myRoom });
   socket.emit('typing_analysis', { text, room: myRoom });
 }
 
@@ -750,5 +992,31 @@ function requestAISummary(auto = false) {
   socket.emit('ai_summary_request', { room: myRoom, tone: sidekickTone, window: 8, auto });
 }
 
+function initIntroLoader() {
+  const intro = document.getElementById('intro-loader');
+  const skip = document.getElementById('intro-skip');
+  if (!intro) {
+    document.body.classList.remove('intro-active');
+    return;
+  }
+
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const duration = reduceMotion ? 700 : 3000;
+  let dismissed = false;
+
+  const dismissIntro = () => {
+    if (dismissed) return;
+    dismissed = true;
+    intro.classList.add('is-leaving');
+    document.body.classList.remove('intro-active');
+    window.setTimeout(() => intro.remove(), 650);
+  };
+
+  if (skip) skip.addEventListener('click', dismissIntro);
+  window.setTimeout(dismissIntro, duration);
+}
+
 initTheme();
 bindThemeToggles();
+setRoomMode('manual');
+initIntroLoader();

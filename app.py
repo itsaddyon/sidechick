@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Sidechick — Real-Time Chat Companion."""
 import eventlet
-eventlet.monkey_patch()
+eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
 import random, os, json, requests, time, hashlib, csv, io, secrets
 from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -22,7 +22,10 @@ except Exception:
 app = Flask(__name__)
 secret_key = os.environ.get('SECRET_KEY') or os.environ.get('FLASK_SECRET_KEY')
 if not secret_key:
-    secret_key = secrets.token_hex(32)
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Add SECRET_KEY=<random-hex> to your .env or deployment config."
+    )
 app.config['SECRET_KEY'] = secret_key
 
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '*').strip()
@@ -30,10 +33,26 @@ if cors_origins != '*':
     cors_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='eventlet')
 rooms = {}  # room_id -> { history: [], users: {} }
+open_match_waiting = {}  # sid -> {username, ts}
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "artifacts")
 MODEL_PATH = os.path.join(MODEL_DIR, "sequence_model.json")
 SEQUENCE_MODEL = build_bootstrapped_sequence_model(MODEL_PATH)
+
+def room_usernames(room_id):
+    room = rooms.get(room_id, {})
+    names = list(room.get('users', {}).values())
+    unique = []
+    for name in names:
+        if name not in unique:
+            unique.append(name)
+    return unique
+
+def build_open_room_code():
+    return "open-" + secrets.token_urlsafe(5).replace("-", "").replace("_", "").lower()[:7]
+
+def remove_open_match_waiter(sid):
+    return open_match_waiting.pop(sid, None)
 
 # ── Cache / rate limit ─────────────────────────────────────────────────────
 _ai_cache = {
@@ -62,13 +81,19 @@ def _cache_get(scope, key, ttl=600):
     return entry['value']
 
 def _cache_set(scope, key, value):
-    _ai_cache.setdefault(scope, {})[key] = {'ts': time.time(), 'value': value}
+    scope_dict = _ai_cache.setdefault(scope, {})
+    if len(scope_dict) > 1000:
+        scope_dict.clear()
+    scope_dict[key] = {'ts': time.time(), 'value': value}
 
 def _rate_limited(scope, key, min_seconds):
-    last = _rate_limit.get(scope, {}).get(key)
+    scope_dict = _rate_limit.setdefault(scope, {})
+    last = scope_dict.get(key)
     if last and (time.time() - last) < min_seconds:
         return True
-    _rate_limit.setdefault(scope, {})[key] = time.time()
+    if len(scope_dict) > 1000:
+        scope_dict.clear()
+    scope_dict[key] = time.time()
     return False
 
 # ── OpenRouter helper ───────────────────────────────────────────────────────
@@ -100,7 +125,7 @@ def ask_ai(system_prompt, user_msg, max_tokens=200):
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:5000",
+                "HTTP-Referer": os.environ.get("APP_URL", "http://localhost:5000"),
                 "X-Title": "Sidechick"
             },
             json={
@@ -882,7 +907,7 @@ def export_room(room_id):
 def solo_analyze():
     """REST endpoint: analyze a single message without joining a room."""
     data = request.json or {}
-    text = data.get('text', '').strip()
+    text = data.get('text', '').strip()[:2000]
     if not text:
         return jsonify({"error": "No text provided"}), 400
     blob    = TextBlob(text)
@@ -916,15 +941,70 @@ def on_join(data):
     room = data.get('room', '')
     if not room:
         return
+    remove_open_match_waiter(request.sid)
     rooms.setdefault(room, {'history': [], 'users': {}})
+    room_users = rooms[room]['users']
+    if request.sid not in room_users and len(room_users) >= 2:
+        if room.startswith('open-'):
+            on_open_match_request({'username': username})
+            return
+        emit('join_error', {
+            'code': 'room_full',
+            'message': 'This room already has two people. Create another room or use Open match.'
+        }, to=request.sid)
+        if not room_users and not rooms[room]['history']:
+            rooms.pop(room, None)
+        return
     rooms[room]['users'][request.sid] = username
     join_room(room)
     emit('system', {'msg': f'✦ {username} joined the room'}, to=room)
     emit('user_joined', {'username': username}, to=room)
+    emit('room_users', {'users': room_usernames(room), 'count': len(room_usernames(room))}, to=room)
     emit('ai_config', {'openrouter': bool(get_openrouter_key())}, to=request.sid)
+
+@socketio.on('open_match_request')
+def on_open_match_request(data):
+    username = (data.get('username') or 'Unknown').strip()[:20] or 'Unknown'
+    remove_open_match_waiter(request.sid)
+    now = time.time()
+    
+    for room_id, room_data in list(rooms.items()):
+        if room_id.startswith('open-') and len(room_data.get('users', {})) == 1:
+            peer = list(room_data['users'].values())[0]
+            emit('open_match_found', {
+                'room': room_id,
+                'peer': peer,
+                'mode': 'open'
+            }, to=request.sid)
+            return
+
+    for sid, waiter in list(open_match_waiting.items()):
+        if sid == request.sid:
+            continue
+        open_match_waiting.pop(sid, None)
+        room = build_open_room_code()
+        emit('open_match_found', {
+            'room': room,
+            'peer': username,
+            'mode': 'open'
+        }, to=sid)
+        emit('open_match_found', {
+            'room': room,
+            'peer': waiter.get('username', 'Someone'),
+            'mode': 'open'
+        }, to=request.sid)
+        return
+    open_match_waiting[request.sid] = {'username': username, 'ts': now}
+    emit('open_match_waiting', {'message': 'Waiting for another open room user...'}, to=request.sid)
+
+@socketio.on('open_match_cancel')
+def on_open_match_cancel():
+    remove_open_match_waiter(request.sid)
+    emit('open_match_cancelled', {'message': 'Open room search cancelled.'}, to=request.sid)
 
 @socketio.on('disconnect')
 def on_disconnect():
+    remove_open_match_waiter(request.sid)
     for room_id, room_data in list(rooms.items()):
         if request.sid in room_data['users']:
             username = room_data['users'].pop(request.sid)
@@ -933,6 +1013,8 @@ def on_disconnect():
             emit('user_left', {'username': username}, to=room_id)
             if not room_data['users']:
                 del rooms[room_id]
+            else:
+                emit('room_users', {'users': room_usernames(room_id), 'count': len(room_usernames(room_id))}, to=room_id)
             break
 
 
@@ -940,7 +1022,7 @@ def on_disconnect():
 def on_message(data):
     room     = data.get('room', '')
     username = data.get('username', 'Unknown')
-    text     = data.get('text', '').strip()
+    text     = data.get('text', '').strip()[:2000]
     if not text or room not in rooms:
         return
 
@@ -963,6 +1045,11 @@ def on_message(data):
         'sexual': has_sexual(text),
         'ts': datetime.now().strftime('%H:%M')
     })
+    
+    if len(rooms[room]['history']) > 150:
+        rooms[room]['history'] = rooms[room]['history'][-150:]
+
+    is_toxic = has_harsh(text) or has_threat(text) or has_severe_abuse(text)
 
     # Broadcast the message with metadata
     emit('message', {
@@ -973,6 +1060,7 @@ def on_message(data):
         'thinking': thinking,
         'expecting': expecting,
         'polarity': polarity,
+        'is_toxic': bool(is_toxic),
         'timestamp': datetime.now().strftime('%H:%M'),
     }, to=room)
 
@@ -1018,11 +1106,18 @@ def on_message(data):
                 }
             }, to=room)
 
+@socketio.on('typing')
+def on_user_typing(data):
+    room = data.get('room', '')
+    if not room:
+        return
+    emit('typing_status', {'username': data.get('username', 'Unknown')}, to=room, include_self=False)
+
 @socketio.on('typing_analysis')
 def on_typing(data):
     room = data.get('room', '')
-    text = data.get('text', '').strip()
-    if not text:
+    text = data.get('text', '').strip()[:2000]
+    if not text or not room:
         return
 
     blob     = TextBlob(text)
