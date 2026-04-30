@@ -111,11 +111,13 @@ function setSidekickEnabled(enabled) {
   if (!app || !panel || !btn) return;
   if (enabled) {
     app.classList.remove('ai-off');
+    app.setAttribute('data-detective-mode', 'on');
     if (shell) shell.classList.remove('ai-off');
     panel.style.display = 'flex';
     btn.classList.add('active');
   } else {
     app.classList.add('ai-off');
+    app.setAttribute('data-detective-mode', 'off');
     if (shell) shell.classList.add('ai-off');
     panel.style.display = 'none';
     btn.classList.remove('active');

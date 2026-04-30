@@ -1108,6 +1108,66 @@ body.theme-dark .panel-select:focus {
   flex-direction: column;
   overflow: hidden;
   max-height: 100vh;
+  position: relative;
+}
+
+.app-screen[data-detective-mode="on"] {
+  --accent: #4ce8ff;
+  --text: #4ce8ff;
+  --ink: #e0faff;
+  --panel: rgba(5, 10, 20, 0.95);
+  --border: rgba(76, 232, 255, 0.3);
+}
+
+.app-screen[data-detective-mode="on"]::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+  z-index: 9999;
+  background-size: 100% 4px, 4px 100%;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.27; }
+  5% { opacity: 0.22; }
+  10% { opacity: 0.25; }
+  15% { opacity: 0.28; }
+  20% { opacity: 0.22; }
+  25% { opacity: 0.29; }
+  30% { opacity: 0.24; }
+  100% { opacity: 0.26; }
+}
+
+.app-screen[data-detective-mode="on"] .messages::after {
+  content: "TERMINAL SYSTEM ACTIVE // ENCRYPTED SESSION";
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--accent);
+  opacity: 0.4;
+  letter-spacing: 3px;
+  pointer-events: none;
+}
+
+.app-screen[data-detective-mode="on"] .msg-bubble {
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: rgba(0, 15, 30, 0.85);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(76, 232, 255, 0.2);
+}
+
+.app-screen[data-detective-mode="on"] .msg.mine .msg-bubble {
+  background: rgba(76, 232, 255, 0.15);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .app-topbar {
@@ -1212,18 +1272,39 @@ body.theme-dark .panel-select:focus {
 }
 
 .app-shell {
+  display: grid;
+  grid-template-columns: 1fr 380px;
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
-  gap: 18px;
-  padding: 18px 20px 20px;
   overflow: hidden;
   position: relative;
 }
 
 .app-shell.ai-off {
   grid-template-columns: 1fr;
+}
+
+@media (max-width: 900px) {
+  .app-shell:not(.ai-off) {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 300px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  
+  .app-shell:not(.ai-off) #chat-panel {
+    flex: none;
+    height: 65vh;
+    border-bottom: 2px solid var(--border);
+  }
+  
+  .app-shell:not(.ai-off) #ai-panel {
+    flex: 1;
+    height: auto;
+    min-height: 400px;
+    background: var(--panel-strong);
+  }
 }
 
 .app-screen.ai-off .app-shell {
@@ -1855,6 +1936,22 @@ body.theme-dark .topbar-btn,
 body.theme-dark .mobile-menu-btn,
 body.theme-dark .topbar-badge {
   background: rgba(10, 18, 34, 0.72);
+}
+
+@media (max-width: 768px) {
+  .topbar-actions {
+    gap: 6px;
+    padding: 8px;
+  }
+  
+  .topbar-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .topbar-btn .btn-label {
+    font-size: 0.75rem;
+  }
 }
 
 body.theme-dark .icon-btn {
@@ -2521,6 +2618,13 @@ body.theme-dark .ghost-btn.active {
   min-height: 0;
 }
 .sugg-row:empty { padding: 0; }
+.ai-off .sugg-row, 
+.ai-off .msg-thinking,
+.ai-off .pitch-strip,
+.ai-off .alert-banner,
+.ai-off .composer-warning {
+  display: none !important;
+}
 .sugg-chip {
   font-size: 0.78rem;
   padding: 4px 10px;
