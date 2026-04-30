@@ -4,6 +4,7 @@ import eventlet
 eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
 import random, os, json, requests, time, hashlib, csv, io, secrets
 from flask import Flask, render_template, request, jsonify, Response
+from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from textblob import TextBlob
 from datetime import datetime
@@ -20,6 +21,7 @@ except Exception:
     pass
 
 app = Flask(__name__)
+CORS(app)
 secret_key = os.environ.get('SECRET_KEY') or os.environ.get('FLASK_SECRET_KEY')
 if not secret_key:
     raise RuntimeError(
@@ -933,6 +935,13 @@ def solo_analyze():
         "alert": alert,
         "suggestions": sugg,
         "ghost": ghost
+    })
+
+@app.route('/api/debug-rooms', methods=['GET'])
+def debug_rooms():
+    return jsonify({
+        "rooms": {k: {"users": v["users"], "history_len": len(v["history"])} for k, v in rooms.items()},
+        "open_match_waiting": open_match_waiting
     })
 
 @socketio.on('join')
