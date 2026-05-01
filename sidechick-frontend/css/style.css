@@ -89,6 +89,11 @@ body {
 body.app-active {
   overflow: hidden;
 }
+@media (max-width: 900px) {
+  body.app-active {
+    overflow: auto !important;
+  }
+}
 
 body.intro-active {
   overflow: hidden;
@@ -1306,12 +1311,12 @@ body.theme-dark .panel-select:focus {
 
   .app-shell:not(.ai-off) #chat-panel {
     flex: none;
-    height: calc(100vh - 68px); /* Full height minus topbar */
+    min-height: calc(100vh - 80px);
     border-bottom: 1px solid var(--border);
   }
 
   .app-shell.ai-off #chat-panel {
-    height: calc(100vh - 68px);
+    min-height: calc(100vh - 80px);
   }
 
   .mobile-detective-bar {
@@ -2514,11 +2519,15 @@ body.theme-dark .ghost-btn.active {
   }
 
   .app-topbar {
-    padding: 12px 16px;
+    padding: 14px 16px;
     align-items: center;
     position: sticky;
+    top: 0;
+    z-index: 100;
     display: grid;
     grid-template-columns: 1fr auto;
+    background: var(--panel-strong);
+    border-bottom: 1px solid var(--border);
   }
 
   .mobile-menu-btn {
