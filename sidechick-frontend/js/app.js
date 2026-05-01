@@ -108,6 +108,7 @@ function setSidekickEnabled(enabled) {
   const shell = document.querySelector('#app .app-shell');
   const panel = document.getElementById('ai-panel');
   const btn = document.getElementById('toggle-ai-btn');
+  const mobBtn = document.getElementById('mob-toggle-ai-btn');
   if (!app || !panel || !btn) return;
   if (enabled) {
     app.classList.remove('ai-off');
@@ -115,17 +116,41 @@ function setSidekickEnabled(enabled) {
     if (shell) shell.classList.remove('ai-off');
     panel.style.display = 'flex';
     btn.classList.add('active');
+    if (mobBtn) mobBtn.textContent = 'Mode: ON';
   } else {
     app.classList.add('ai-off');
     app.setAttribute('data-detective-mode', 'off');
     if (shell) shell.classList.add('ai-off');
     panel.style.display = 'none';
     btn.classList.remove('active');
+    if (mobBtn) mobBtn.textContent = 'Mode: OFF';
   }
   btn.title = enabled ? 'Detective Mode On' : 'Detective Mode Off';
   btn.setAttribute('aria-label', btn.title);
   btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
   localStorage.setItem('sidekick_enabled', enabled ? 'true' : 'false');
+  
+  if (!enabled) {
+    updateMoodBackground('NEUTRAL');
+  }
+}
+
+function updateMoodBackground(mood) {
+  const root = document.documentElement;
+  const moodColors = {
+    'HAPPY': { g1: 'rgba(76, 255, 150, 0.2)', g2: 'rgba(255, 230, 76, 0.2)' },
+    'LOVING': { g1: 'rgba(255, 76, 150, 0.25)', g2: 'rgba(255, 150, 76, 0.2)' },
+    'ANGRY': { g1: 'rgba(255, 76, 76, 0.25)', g2: 'rgba(150, 76, 255, 0.2)' },
+    'THREATENING': { g1: 'rgba(255, 0, 0, 0.3)', g2: 'rgba(0, 0, 0, 0.4)' },
+    'SAD': { g1: 'rgba(76, 150, 255, 0.2)', g2: 'rgba(120, 120, 120, 0.2)' },
+    'SCARED': { g1: 'rgba(255, 255, 76, 0.15)', g2: 'rgba(76, 76, 76, 0.3)' },
+    'UPSET': { g1: 'rgba(255, 150, 76, 0.2)', g2: 'rgba(150, 76, 76, 0.2)' },
+    'NEUTRAL': { g1: 'rgba(76, 232, 255, 0.24)', g2: 'rgba(255, 111, 141, 0.2)' }
+  };
+  
+  const colors = moodColors[mood] || moodColors['NEUTRAL'];
+  root.style.setProperty('--bg-grad-1', `radial-gradient(circle at 10% 12%, ${colors.g1}, transparent 42%)`);
+  root.style.setProperty('--bg-grad-2', `radial-gradient(circle at 90% 10%, ${colors.g2}, transparent 40%)`);
 }
 
 function setThemeMode(mode) {
@@ -231,8 +256,8 @@ function initTheme() {
     setThemeMode(stored);
     return;
   }
-  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  setThemeMode(prefersDark ? 'dark' : 'light');
+  // Default to dark mode for the aesthetic
+  setThemeMode('dark');
 }
 
 function bindThemeToggles() {
@@ -635,6 +660,25 @@ function updateVibeBadge(level, label, alertMsg, stageCode, criticalAction) {
   }
 }
 
+function setThinking(text) {
+  const t = document.getElementById('their-thinking');
+  if (t) t.textContent = text || '';
+}
+
+function setExpectation(text) {
+  const e = document.getElementById('their-expectation');
+  if (e) e.textContent = text || '';
+}
+
+function setSuggestedReply(text) {
+  const row = document.getElementById('sugg-row');
+  const draft = document.getElementById('draft-reply');
+  const tip = document.getElementById('reply-tip');
+  if (row) row.style.display = 'none';
+  if (draft) draft.style.display = 'none';
+  if (tip) tip.style.display = 'none';
+}
+
 function showThreatStop(message) {
   const overlay = document.getElementById('threat-stop-overlay');
   const text = document.getElementById('threat-stop-text');
@@ -715,7 +759,17 @@ function maybeShowFactCheckLoading(text) {
 function renderMessage(data) {
   const isMine = data.username === myName;
   const div = document.createElement('div');
-  div.className = 'msg slide-in ' + (isMine ? 'mine' : 'theirs');
+  const type = isMine ? 'mine' : 'theirs';
+  div.className = `msg slide-in ${type}`;
+  
+  if (!isMine && data.username) {
+    let hash = 0;
+    for (let i = 0; i < data.username.length; i++) {
+      hash = data.username.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash % 360);
+    div.style.setProperty('--user-hue', hue);
+  }
 
   if (data.is_toxic && !isMine) {
     div.classList.add('message-blurred');
@@ -782,6 +836,9 @@ function renderMessage(data) {
     theirLastMsg = data.text;
     maybeShowFactCheckLoading(data.text);
     if (data.thinking) document.getElementById('their-thinking').textContent = data.thinking;
+    setExpectation(data.expectation);
+    setSuggestedReply(data.reply);
+    updateMoodBackground(data.mood);
     if (data.expecting) document.getElementById('their-expectation').textContent = data.expecting;
     if (data.their_mood || data.mood) {
       document.getElementById('their-mood').textContent = (data.their_mood || data.mood);
@@ -900,11 +957,11 @@ socket.on('ai_update', (data) => {
 socket.on('typing_insight', (data) => {
   if (data.level !== undefined) updateVibeBadge(data.level, data.label || 'Stable', data.alert || '', data.stage_code, data.critical_action);
   const replyTip = document.getElementById('reply-tip');
-  if (data.suggestion && replyTip) replyTip.textContent = data.suggestion;
+  if (replyTip) replyTip.style.display = 'none';
   const draftReply = document.getElementById('draft-reply');
+  if (draftReply) draftReply.style.display = 'none';
   if (data.ghost) {
     ghostText = data.ghost;
-    if (draftReply) draftReply.textContent = data.ghost;
   }
   if (data.prediction) document.getElementById('prediction-text').textContent = data.prediction;
   if (data.sugg) renderSuggestions(data.sugg);
@@ -1026,6 +1083,7 @@ function initIntroLoader() {
   const dismissIntro = () => {
     if (dismissed) return;
     dismissed = true;
+    window.scrollTo(0, 0); // Ensure we start at the top
     intro.classList.add('is-leaving');
     document.body.classList.remove('intro-active');
     window.setTimeout(() => intro.remove(), 650);

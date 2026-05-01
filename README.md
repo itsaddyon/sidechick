@@ -1,79 +1,80 @@
 # Sidechick: AI-Powered Behavioral Risk Chat
 
+<div align="center">
+  <img src="static/favicon.svg" width="100" height="100" alt="Sidechick Logo">
+  <br>
+  <h3>Private Rooms • Behavioral Analytics • Real-time Safety</h3>
+  <p><i>A "Gen Z" premium chat experience built for trust, safety, and deep psychological insights.</i></p>
+</div>
+
+---
+
 Sidechick is a private-room chat experience designed with advanced safety analytics and behavioral drift forecasting. It is specifically built to address the challenge of detecting gradual shifts that lead to toxic or harmful online interactions.
 
-## Core Features
+## ✨ New & Premium Features
+
+- **🌑 Obsidian Detective Theme**: An immersive, high-tech "terminal" aesthetic for investigative sessions with dynamic scanline animations.
+- **🌈 Dynamic Mood Backgrounds**: The interface is alive. The background gradients shift in real-time based on the AI-detected emotional tone of the conversation.
+- **✨ Unique Identity Glows**: Every participant gets a unique, hashing-based color identity applied as a glow to their message bubbles for instant recognition.
+- **📱 Mobile-First "Gen Z" Aesthetic**: Sleek glassmorphism, pill-shaped UI components, and premium typography tailored for a modern mobile experience.
+- **🎭 Staggered AI Animations**: Fluid, high-quality entrance animations for intelligence cards that make AI insights feel organic.
+- **🛠️ Smart Mobile Toolset**: A specialized mobile navigation menu that keeps investigative tools accessible without cluttering the chat space.
+
+## 🛡️ Core Safety Intelligence
 
 - **Real-Time Sequential Monitoring**: Tracks recent message sequences instead of isolated turns to compute behavioral drift and escalation risk.
-- **Pre-Termination Warnings**: When a user drafts a highly dangerous or threatening message, Sidechick intervenes immediately. It presents a warning to the user before they can send it. If sent, it safely terminates the chat session, notifies the other user, and permanently destroys the room to maintain platform safety.
-- **Detective Mode**: A specialized UI mode that surfaces the underlying AI context. When activated, it transforms the user interface with a sleek investigation theme and selectively reveals AI "thinking" and tactical suggestions *only* when the system detects rising tension.
+- **Pre-Termination Warnings**: Intervenes when a user drafts dangerous messages, presenting a warning *before* they send it.
+- **Session Auto-Destruct**: Safely terminates sessions and destroys rooms if critical safety thresholds are breached.
 - **Response Playbooks**: Dynamically generates ghost replies and interventions tailored to the exact escalation stage.
-- **Model Training Integration**: Includes a local retraining script and saved model pipeline for forecasting sequential behavioral drift.
 
-## Architecture & Deployment
+## 🏗️ Architecture & Deployment
 
 This project uses a split deployment architecture to maximize speed and cost efficiency:
 - **Frontend (Vercel)**: A static, highly optimized HTML/CSS/JS interface.
-- **Backend (Render)**: A Python Flask/Socket.IO backend handling the realtime connections, machine learning inference, and message routing.
+- **Backend (Render)**: A Python Flask/Socket.IO backend handling realtime connections, machine learning inference, and message routing.
 
 ### Compiling the Frontend
-If you make changes to the frontend UI templates in the Flask backend, you must compile them into static files before deploying to Vercel.
-
+If you make changes to the frontend UI templates, you must compile them into static files for Vercel:
 ```bash
 python build_frontend.py
 ```
-This script automatically strips Flask-specific template logic (like `url_for()`), injects environmental routing (e.g. `BACKEND_URL`), and outputs production-ready static assets into the `sidechick-frontend/` directory. You then push this directory to your Vercel-linked repository.
+This script strips Flask tags, injects the `BACKEND_URL`, and outputs to the `sidechick-frontend/` directory.
 
-## Quick Start (Local Development)
+## 🚀 Quick Start (Local Development)
 
 ```bash
 pip install -r requirements.txt
 python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
 python app.py
 ```
-
 Open `http://127.0.0.1:5000` in your browser.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Backend**: Python 3.11, Flask 3.0.3, Flask-SocketIO 5.3.6 (Eventlet async mode)
+- **Backend**: Python 3.11, Flask 3.0.3, Flask-SocketIO (Eventlet)
 - **NLP**: TextBlob + Bootstrapped Recurrent Sequence Model
-- **Frontend**: Vanilla HTML/CSS/JS with custom CSS architecture
-- **Optional AI Assist**: OpenRouter Integration
+- **Frontend**: Vanilla HTML/CSS/JS (Custom Design System)
+- **Optional AI**: OpenRouter Integration
 
-## Model Retraining
-
-To retrain the sequential drift forecasting model on new synthetic toxic-drift sequences:
-
+## 📈 Model Retraining
+To update the sequential drift forecasting model:
 ```bash
 python train_sequence_model.py
 ```
 
-This updates the model artifacts (`sequence_model.json` and `sequence_model_report.json`), which the backend will automatically load upon its next boot.
+## 👥 Contributors
 
-## Optional Configuration
+<div align="center">
 
-Create a `.env` file in the root directory:
+| | Contributor | Role | Socials |
+| :--- | :--- | :--- | :--- |
+| <img src="https://github.com/itsaddyon.png" width="50" style="border-radius:50%"> | **Adarsh Arya** | Lead Developer & Architect | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/itsaddyon) [![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/itsaddyon) |
 
-```env
-# Optional: External AI APIs for deeper fact-checking or inferences
-OPENROUTER_API_KEY=your_key_here
-OPENROUTER_MODEL=openrouter/auto
+**Team Grey Hats** • *Made with trust*
 
-# Required for Render / Cross-Origin Deployments
-CORS_ALLOWED_ORIGINS=*
-SECRET_KEY=your_secure_secret_here
-```
-
-## Note on Architecture
-This project is an experimental behavioral-risk dashboard. The forecasting layer utilizes a bootstrapped recurrent model trained locally on synthetic data, designed specifically to demonstrate early-intervention capabilities for online safety moderation.
-
-## Credits
-
-**Build for People**
-- **Team Grey Hats** (Made with trust)
-- **Lead**: Adarsh Arya
+</div>
 
 ---
-*Created for the community with safety and trust at its core.*
-
+<p align="center">
+  <i>Created for the community with safety and trust at its core.</i>
+</p>
