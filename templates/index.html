@@ -182,9 +182,9 @@
 
     <footer class="composer">
       <div id="composer-warning" class="composer-warning" style="display: none;"></div>
-      <div id="sugg-row" class="sugg-row"></div>
-      <div class="composer-reply-tip" id="reply-tip"></div>
-      <div class="composer-draft" id="draft-reply" onclick="useDraft()" title="Click to use this reply"></div>
+      <div id="sugg-row" class="sugg-row" style="display: none;"></div>
+      <div class="composer-reply-tip" id="reply-tip" style="display: none;"></div>
+      <div class="composer-draft" id="draft-reply" style="display: none;" onclick="useDraft()" title="Click to use this reply"></div>
       <div class="composer-row">
         <textarea id="msg-input" placeholder="Type a message..." rows="1" oninput="onTyping()" onkeydown="handleKey(event)"></textarea>
         <button id="send-btn" class="send-fab" onclick="sendMessage()" aria-label="Send message">
@@ -195,6 +195,16 @@
       </div>
     </footer>
   </section>
+  
+  <div id="mobile-detective-bar" class="mobile-detective-bar">
+    <div class="mob-det-info">
+      <strong>Detective Mode</strong>
+      <span>Turn on for vibe analysis and safety tools</span>
+    </div>
+    <button class="primary-btn toggle-det-btn" onclick="toggleSidekick()" id="mob-toggle-ai-btn">
+      Toggle Mode
+    </button>
+  </div>
 
   <aside id="ai-panel" class="workspace-column intelligence-column">
     <header class="intelligence-header">
