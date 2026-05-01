@@ -86,17 +86,17 @@ body {
   position: relative;
 }
 
-body.app-active {
-  overflow: hidden;
-}
-@media (max-width: 900px) {
-  body.app-active {
-    overflow: auto !important;
-  }
-}
-
+body.app-active,
 body.intro-active {
   overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  body.app-active,
+  body.intro-active {
+    overflow: auto !important;
+    height: auto !important;
+  }
 }
 
 body::before,
@@ -1302,31 +1302,43 @@ body.theme-dark .panel-select:focus {
   .app-shell {
     display: flex !important;
     flex-direction: column !important;
-    grid-template-columns: 1fr !important;
-    grid-template-rows: auto !important;
-    overflow-y: auto !important;
     height: auto !important;
-    min-height: 100vh;
+    min-height: 0;
+    overflow: visible !important;
+    padding: 0 !important;
   }
 
-  .app-shell:not(.ai-off) #chat-panel {
-    flex: none;
-    min-height: calc(100vh - 80px);
-    border-bottom: 1px solid var(--border);
-  }
-
+  .app-shell:not(.ai-off) #chat-panel,
   .app-shell.ai-off #chat-panel {
-    min-height: calc(100vh - 80px);
+    flex: none;
+    width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Ensure the messages list handles its own scrolling if possible, 
+     or just flows if the parent scrolls */
+  #chat-panel .messages {
+    flex: 1;
+    min-height: 300px;
+    height: auto;
+    overflow-y: visible;
   }
 
   .mobile-detective-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 24px;
     background: var(--panel-strong);
+    border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    margin-top: 10px;
+    margin: 20px 0;
+    width: 100%;
+    position: relative;
+    z-index: 5;
   }
 
   .mob-det-info {
@@ -2512,22 +2524,24 @@ body.theme-dark .ghost-btn.active {
     justify-content: flex-start;
   }
 
-  .lobby-topbar {
-    top: 16px;
-    left: 16px;
-    right: 16px;
-  }
-
   .app-topbar {
-    padding: 14px 16px;
+    padding: 12px 16px;
     align-items: center;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    z-index: 200;
     display: grid;
     grid-template-columns: 1fr auto;
     background: var(--panel-strong);
+    backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  #app {
+    padding-top: 60px; /* Offset for fixed topbar */
   }
 
   .mobile-menu-btn {
