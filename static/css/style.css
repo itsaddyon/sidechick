@@ -38,14 +38,18 @@
 html,
 body {
   margin: 0;
-  height: 100%;
+  min-height: 100dvh;
+  height: auto !important;
   background:
     var(--bg-grad-1),
     var(--bg-grad-2),
     var(--bg-grad-3),
     var(--bg-grad-4);
+  background-attachment: fixed !important;
   color: var(--text);
   font-family: var(--font-sans);
+  overflow-x: hidden;
+  overflow-y: auto !important;
 }
 
 body.theme-dark {
@@ -66,17 +70,17 @@ body.theme-dark {
   --accent-3: #ff6ad5;
   --accent-warm: #ff9f6e;
   --shadow: 0 30px 110px rgba(0, 0, 0, 0.7);
-  --bg-grad-1: radial-gradient(circle at 10% 12%, rgba(76, 232, 255, 0.24), transparent 42%);
-  --bg-grad-2: radial-gradient(circle at 90% 10%, rgba(255, 111, 141, 0.2), transparent 40%);
-  --bg-grad-3: repeating-linear-gradient(150deg, rgba(76, 232, 255, 0.07) 0, rgba(76, 232, 255, 0.07) 1px, transparent 1px, transparent 11px);
-  --bg-grad-4: linear-gradient(180deg, #04060d 0%, #0b1220 100%);
+  --bg-grad-1: radial-gradient(circle at 12% 15%, rgba(76, 232, 255, 0.3), transparent 45%);
+  --bg-grad-2: radial-gradient(circle at 88% 12%, rgba(255, 111, 141, 0.25), transparent 45%);
+  --bg-grad-3: repeating-linear-gradient(150deg, rgba(76, 232, 255, 0.04) 0, rgba(76, 232, 255, 0.04) 1px, transparent 1px, transparent 12px);
+  --bg-grad-4: linear-gradient(180deg, #050811 0%, #0c1425 100%);
   --lobby-bg: 
-    radial-gradient(circle at 10% 12%, rgba(76, 232, 255, 0.24), transparent 42%),
-    radial-gradient(circle at 90% 10%, rgba(255, 111, 141, 0.2), transparent 40%),
-    repeating-linear-gradient(150deg, rgba(76, 232, 255, 0.07) 0, rgba(76, 232, 255, 0.07) 1px, transparent 1px, transparent 11px),
+    radial-gradient(circle at 12% 15%, rgba(76, 232, 255, 0.3), transparent 45%),
+    radial-gradient(circle at 88% 12%, rgba(255, 111, 141, 0.25), transparent 45%),
+    repeating-linear-gradient(150deg, rgba(76, 232, 255, 0.04) 0, rgba(76, 232, 255, 0.04) 1px, transparent 1px, transparent 12px),
     var(--bg-grad-4);
-  --glow-1: radial-gradient(circle, rgba(76, 232, 255, 0.4), transparent 62%);
-  --glow-2: radial-gradient(circle, rgba(255, 111, 141, 0.32), transparent 62%);
+  --glow-1: radial-gradient(circle, rgba(76, 232, 255, 0.45), transparent 65%);
+  --glow-2: radial-gradient(circle, rgba(255, 111, 141, 0.35), transparent 65%);
 }
 
 body {
@@ -91,12 +95,8 @@ body.intro-active {
   overflow: hidden;
 }
 
-@media (max-width: 900px) {
-  body.app-active,
-  body.intro-active {
-    overflow: auto !important;
-    height: auto !important;
-  }
+body.intro-active {
+  overflow: auto;
 }
 
 body::before,
@@ -686,15 +686,23 @@ body.intro-active #lobby {
   border: 1px solid rgba(37, 216, 156, 0.22);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.52);
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
 }
 
 .privacy-panel summary {
   cursor: pointer;
-  padding: 14px 16px;
+  padding: 18px 20px;
   color: var(--ink);
   font-weight: 800;
   list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .privacy-panel summary::-webkit-details-marker {
@@ -703,8 +711,9 @@ body.intro-active #lobby {
 
 .privacy-panel summary::after {
   content: '+';
-  float: right;
   color: var(--blue);
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
 }
 
 .privacy-panel[open] summary::after {
@@ -1113,11 +1122,11 @@ body.theme-dark .panel-select:focus {
 
 
 .app-screen {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: 100vh;
+  max-height: 100dvh;
   position: relative;
 }
 
@@ -1136,7 +1145,7 @@ body.theme-dark .panel-select:focus {
   top: 0; left: 0; bottom: 0; right: 0;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
               linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
-  z-index: 9999;
+  z-index: 1; /* Keep low — fixed-position AI panel (z-index 1000) must stay on top */
   background-size: 100% 4px, 4px 100%;
   pointer-events: none;
   animation: flicker 0.15s infinite;
@@ -1237,7 +1246,7 @@ body.theme-dark .panel-select:focus {
 }
 
 .mobile-detective-bar {
-  display: none;
+  display: none !important;
 }
 
 .topbar-actions::-webkit-scrollbar {
@@ -1299,82 +1308,203 @@ body.theme-dark .panel-select:focus {
 }
 
 @media (max-width: 900px) {
+  /* ── Core app shell layout ── */
   .app-shell {
     display: flex !important;
     flex-direction: column !important;
-    height: auto !important;
-    min-height: 0;
-    overflow: visible !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important; /* Critical: fixed height for internal scroll */
+    overflow: hidden !important;
     padding: 0 !important;
   }
 
-  .app-shell:not(.ai-off) #chat-panel,
-  .app-shell.ai-off #chat-panel {
-    flex: none;
+  /* Chat panel fills the entire shell */
+  #chat-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: calc(100vh - 70px);
-    display: flex;
-    flex-direction: column;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
   }
 
-  /* Ensure the messages list handles its own scrolling if possible, 
-     or just flows if the parent scrolls */
+  /* Messages area scrolls within the panel */
   #chat-panel .messages {
-    flex: 1;
-    min-height: 300px;
-    height: auto;
-    overflow-y: visible;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain; /* Prevents whole page bounce */
+    -webkit-overflow-scrolling: touch;
   }
 
-  .mobile-detective-bar {
+  /* Workspace column resets */
+  .workspace-column {
+    flex: 1 !important;
+    height: 100% !important; /* Critical */
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* ── AI Panel: slide-in drawer ── */
+  #ai-panel {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    width: 88vw !important;
+    max-width: 420px;
+    height: 100dvh !important;
+    background: var(--panel-strong) !important;
+    backdrop-filter: blur(24px) !important;
+    z-index: 1000 !important;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    display: none !important; /* Failsafe: Hide completely when not in use */
+    flex-direction: column !important;
+    padding: 0 !important;
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.3);
+    border-left: 1px solid var(--border);
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .app-screen[data-detective-mode="on"] #ai-panel {
+    display: flex !important; /* Show as flex when active */
+    transform: translateX(0);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Backdrop overlay ── */
+  .ai-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .app-screen[data-detective-mode="on"] .ai-overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* ── Drawer close button ── */
+  .drawer-close-btn {
+    display: flex !important;
+    position: relative;
+    width: 44px; /* Increased tap target */
+    height: 44px;
+    margin-right: 8px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15); /* More visible */
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  /* ── Intelligence (AI) panel header ── */
+  .intelligence-header {
+    position: relative !important;
+    padding: 10px 14px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important; /* Space between X/Title and Status */
+    gap: 12px !important;
+    background: var(--panel-strong) !important;
+    border-bottom: 1px solid var(--border) !important;
+    flex-shrink: 0 !important;
+    z-index: 5 !important;
+  }
+
+  /* Container for X and Title */
+  .intelligence-header > .header-main-info {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 24px;
-    background: var(--panel-strong);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    margin: 20px 0;
-    width: 100%;
-    position: relative;
-    z-index: 5;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
   }
 
-  .mob-det-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .intelligence-header h2 {
+    font-size: 1rem !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .mob-det-info strong {
-    font-size: 1rem;
-    color: var(--ink);
+  .intelligence-header .eyebrow {
+    font-size: 0.65rem !important;
+    margin-bottom: 1px !important;
   }
 
-  .mob-det-info span {
-    font-size: 0.8rem;
-    color: var(--muted);
+  /* Status pill: compact, right-aligned */
+  #ai-status {
+    flex-shrink: 0 !important;
+    font-size: 0.7rem !important;
+    max-width: 80px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: right !important;
   }
 
-  .toggle-det-btn {
-    padding: 8px 16px;
-    font-size: 0.85rem;
-    box-shadow: none;
+  /* ── Scrollable AI panel content ── */
+  #intel-overview {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px !important;
+    gap: 10px !important;
   }
 
-  #ai-panel {
-    flex: none;
-    height: auto;
-    min-height: 400px;
-    display: none; /* Default hidden, app.js handles showing it */
-    padding: 24px 18px !important;
+  /* Stage row: keep horizontal so emoji + next-vibe card sit side by side */
+  #ai-panel .stage-row {
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 10px !important;
   }
 
-  .app-screen:not(.ai-off) #ai-panel {
-    display: flex !important;
+  /* Stats grid: stay 2-col inside the wide panel */
+  #ai-panel .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Intel cards: tighter padding */
+  #ai-panel .intel-card {
+    padding: 12px !important;
+  }
+
+  /* Vibe badge: ensure emoji circle doesn't get clipped */
+  #ai-panel .vibe-badge {
+    min-width: auto !important;
+    padding: 10px 12px !important;
+  }
+
+  #ai-panel .vibe-icon {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 1.1rem !important;
   }
 }
+
+.drawer-close-btn {
+  display: none;
+}
+
 
 .app-screen.ai-off .app-shell {
   grid-template-columns: minmax(0, 1fr);
@@ -1383,6 +1513,7 @@ body.theme-dark .panel-select:focus {
 .app-screen.ai-off #chat-panel {
   width: min(1120px, 100%);
   justify-self: center;
+  flex: 1;
 }
 
 .app-shell.ai-off .pitch-strip {
@@ -1612,10 +1743,12 @@ body.theme-dark .panel-select:focus {
 }
 
 .msg-bubble {
-  padding: 13px 14px;
-  background: rgba(255, 255, 255, 0.95);
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
   line-height: 1.55;
-  box-shadow: 0 8px 18px rgba(26, 17, 8, 0.04);
+  box-shadow: 0 8px 24px rgba(26, 17, 8, 0.06);
+  border-radius: 20px;
 }
 
 .msg.mine .msg-bubble {
@@ -1641,8 +1774,8 @@ body.theme-dark .panel-select:focus {
 .composer {
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  overflow-y: auto;
-  max-height: 34vh;
+  overflow: visible;
+  max-height: none;
 }
 
 .composer-head {
@@ -1664,7 +1797,7 @@ body.theme-dark .panel-select:focus {
 }
 
 #msg-input {
-  min-height: 60px;
+  min-height: 52px;
   font-family: var(--font-mono);
   resize: none;
   overflow-y: auto;
@@ -2389,30 +2522,13 @@ body.theme-dark .ghost-btn.active {
 }
 
 @media (max-width: 1100px) {
-  .hero-shell,
-  .app-shell {
+  .hero-shell {
     grid-template-columns: 1fr !important;
     padding: 0 16px;
-  }
-
-  .hero-shell {
     display: flex;
     flex-direction: column;
     gap: 24px;
     margin-top: 20px;
-  }
-
-  .workspace-column {
-    height: auto;
-  }
-
-  body {
-    overflow: auto;
-  }
-
-  .app-shell {
-    height: auto;
-    overflow: visible;
   }
 
   .toolbar {
@@ -2480,6 +2596,7 @@ body.theme-dark .ghost-btn.active {
 }
 
 @media (max-width: 720px) {
+  /* ── Intro screen ── */
   .intro-loader {
     padding: 18px;
   }
@@ -2514,52 +2631,101 @@ body.theme-dark .ghost-btn.active {
     font-size: 0.95rem;
   }
 
-  #lobby,
-  .app-shell {
-    padding: 14px;
-  }
-
+  /* ── Lobby ── */
   #lobby {
     padding: 70px 14px 28px;
     justify-content: flex-start;
   }
 
+  /* ── App Screen: Full-height flex column ── */
+  .app-screen {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    /* Handle safe areas (iPhone notch / home bar) */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* ── Topbar: stays in the flex flow (NOT fixed) ── */
   .app-topbar {
-    padding: 12px 16px;
+    flex-shrink: 0;
+    padding: 10px 14px;
     align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
     z-index: 200;
     display: grid;
     grid-template-columns: 1fr auto;
     background: var(--panel-strong);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
   }
 
+  /* ── App shell: fills remaining space ── */
   #app {
-    padding-top: 60px; /* Offset for fixed topbar */
+    height: 100dvh;
+    overflow: hidden;
   }
 
+  .app-shell {
+    padding: 0 !important;
+  }
+
+  /* ── Workspace header: compact ── */
+  .workspace-header {
+    padding: 10px 14px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .workspace-header .eyebrow {
+    display: none;
+  }
+
+  .workspace-header h2 {
+    font-size: 1rem;
+    margin: 0 0 2px;
+  }
+
+  .workspace-header .header-sub {
+    font-size: 0.78rem;
+    margin: 0;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .participant-strip {
+    margin-top: 6px;
+  }
+
+  .participant-pill {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+  }
+
+  /* ── Mobile menu button ── */
   .mobile-menu-btn {
     display: inline-flex !important;
     align-items: center;
-    gap: 7px;
-    min-height: 38px;
-    padding: 8px 12px;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 10px;
     justify-self: end;
   }
 
+  /* ── Tools dropdown ── */
   .topbar-actions {
     display: none;
     grid-column: 1 / -1;
     width: 100%;
     justify-content: stretch;
-    gap: 8px;
-    padding-top: 10px;
+    gap: 6px;
+    padding: 8px 0 4px;
     overflow: visible;
   }
 
@@ -2569,61 +2735,85 @@ body.theme-dark .ghost-btn.active {
   }
 
   .topbar-btn {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     justify-content: center;
+    padding: 7px 10px;
   }
 
   .icon-btn {
-    min-width: 38px;
-    height: 38px;
+    min-width: 36px;
+    height: 36px;
     font-size: 1rem;
   }
 
   .private-chip {
-    max-width: 44vw;
+    max-width: 40vw;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.72rem;
+    padding: 5px 8px;
   }
 
   .topbar-badge {
     justify-content: center;
     grid-column: 1 / -1;
+    font-size: 0.78rem;
   }
 
-  .privacy-panel-body {
-    grid-template-columns: 1fr;
-  }
-
+  /* ── Mode toast ── */
   .mode-toast {
     left: 16px;
     right: 16px;
-    top: 64px;
+    top: 56px;
     text-align: center;
+  }
+
+  /* ── Composer ── */
+  .composer {
+    flex-shrink: 0 !important;
+    padding: 10px 12px !important;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
   }
 
   .composer-row {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
+    gap: 8px;
   }
 
   #msg-input {
-    min-height: 52px;
+    min-height: 46px;
   }
 
   .send-fab {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
   }
 
-  .hero-copy,
-  .lobby-panel,
-  .workspace-header,
-  .composer,
+  /* ── Privacy panel ── */
+  .privacy-panel-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Hero / lobby styles ── */
+  .hero-copy {
+    padding: 24px;
+  }
+
+  .lobby-panel {
+    padding: 22px;
+  }
+
+  /* ── AI panel (when open) ── */
   #ai-panel {
-    padding: 18px;
+    padding: 0 !important;
+    overflow-y: auto !important;
   }
 
+  /* ── Stats / grids ── */
   .hero-metrics,
   .stats-grid,
   .solo-grid,
@@ -2643,11 +2833,8 @@ body.theme-dark .ghost-btn.active {
     white-space: nowrap;
   }
 
-  .panel-heading,
-  .workspace-header,
-  .toolbar,
-  .composer-row,
-  .stage-row {
+  /* ── Misc layout ── */
+  .panel-heading {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2661,22 +2848,12 @@ body.theme-dark .ghost-btn.active {
     display: none;
   }
 
-  .send-btn {
-    flex: 0 0 auto;
-    width: 100%;
-  }
-
-  .composer {
-    max-height: none;
-    overflow: visible;
-  }
-
   .msg {
-    max-width: 100%;
+    max-width: 92%;
   }
 
   .messages-empty {
-    padding: 0 24px 20px;
+    padding: 0 16px 16px;
   }
 
   .intel-tabs {

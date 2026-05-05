@@ -108,31 +108,48 @@ function setSidekickEnabled(enabled) {
   const shell = document.querySelector('#app .app-shell');
   const panel = document.getElementById('ai-panel');
   const btn = document.getElementById('toggle-ai-btn');
-  const mobBtn = document.getElementById('mob-toggle-ai-btn');
   if (!app || !panel || !btn) return;
+
   if (enabled) {
     app.classList.remove('ai-off');
     app.setAttribute('data-detective-mode', 'on');
     if (shell) shell.classList.remove('ai-off');
+    // CSS handles show/hide: transform on mobile, display on desktop
     panel.style.display = 'flex';
     btn.classList.add('active');
-    if (mobBtn) mobBtn.textContent = 'Mode: ON';
+    toggleTopbarMenu(false);
   } else {
     app.classList.add('ai-off');
     app.setAttribute('data-detective-mode', 'off');
     if (shell) shell.classList.add('ai-off');
-    panel.style.display = 'none';
+    
+    // On desktop hide via display:none; on mobile CSS 'display: none !important' takes over
+    if (window.innerWidth > 900) {
+      panel.style.display = 'none';
+    } else {
+      panel.style.display = ''; // Clear inline style to let CSS handle it
+    }
     btn.classList.remove('active');
-    if (mobBtn) mobBtn.textContent = 'Mode: OFF';
   }
   btn.title = enabled ? 'Detective Mode On' : 'Detective Mode Off';
   btn.setAttribute('aria-label', btn.title);
   btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
   localStorage.setItem('sidekick_enabled', enabled ? 'true' : 'false');
-  
+
   if (!enabled) {
     updateMoodBackground('NEUTRAL');
   }
+}
+
+function scrollToBottom(smooth = true) {
+  const feed = document.getElementById('messages');
+  if (!feed) return;
+  requestAnimationFrame(() => {
+    feed.scrollTo({
+      top: feed.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  });
 }
 
 function updateMoodBackground(mood) {
@@ -824,7 +841,7 @@ function renderMessage(data) {
   } else {
     feed.appendChild(div);
   }
-  feed.scrollTop = feed.scrollHeight;
+  scrollToBottom();
   const empty = document.getElementById('messages-empty');
   if (empty) empty.style.display = 'none';
 
@@ -878,7 +895,7 @@ socket.on('system', (data) => {
   div.textContent = data.msg;
   const feed = document.getElementById('messages');
   feed.appendChild(div);
-  feed.scrollTop = feed.scrollHeight;
+  scrollToBottom();
   const empty = document.getElementById('messages-empty');
   if (empty) empty.style.display = 'none';
 });
@@ -1007,7 +1024,7 @@ socket.on('typing_status', (data) => {
       <div class="msg-body"><div class="msg-bubble typing-dots"><span>.</span><span>.</span><span>.</span></div></div>
     `;
     feed.appendChild(indicator);
-    feed.scrollTop = feed.scrollHeight;
+    scrollToBottom();
   }
   
   clearTimeout(theirTypingTimer);
