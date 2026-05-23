@@ -2,13 +2,15 @@
 """Sidechick — Real-Time Chat Companion."""
 import eventlet
 eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
-import random, os, json, requests, time, hashlib, csv, io, secrets
-from flask import Flask, render_template, request, jsonify, Response
+import random, os, json, requests, time, hashlib, csv, io, secrets, base64
+from flask import Flask, render_template, request, jsonify, Response, send_file
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from textblob import TextBlob
 from datetime import datetime
+from werkzeug.utils import secure_filename
 from sequence_model import build_bootstrapped_sequence_model, dataset_bundle
+from hinglish_processor import is_hinglish_text, extract_hinglish_features, process_message
 
 
 try:
@@ -36,10 +38,29 @@ if cors_origins != '*':
 socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='eventlet')
 rooms = {}  # room_id -> { history: [], users: {} }
 open_match_waiting = {}  # sid -> {username, ts}
+game_sessions = {}  # game_code -> { game_type, creator, players: [], state, answers: {} }
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ── Photo Upload Configuration ──────────────────────────────────────────
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+# Create uploads folder if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 MODEL_DIR = os.path.join(BASE_DIR, "artifacts")
-MODEL_PATH = os.path.join(MODEL_DIR, "sequence_model.json")
+# Try to load Hinglish model first, fall back to basic model
+HINGLISH_MODEL_PATH = os.path.join(MODEL_DIR, "sequence_model_hinglish.json")
+BASIC_MODEL_PATH = os.path.join(MODEL_DIR, "sequence_model.json")
+MODEL_PATH = HINGLISH_MODEL_PATH if os.path.exists(HINGLISH_MODEL_PATH) else BASIC_MODEL_PATH
 SEQUENCE_MODEL = build_bootstrapped_sequence_model(MODEL_PATH)
+MODEL_TYPE = "bilingual" if os.path.exists(HINGLISH_MODEL_PATH) else "english"
 
 def room_usernames(room_id):
     room = rooms.get(room_id, {})
@@ -507,6 +528,28 @@ def _sequence_feature_vector(item, latest_polarity=None):
     caps = _caps_ratio(text)
     short_reply = 1.0 if len(text.split()) <= 3 else 0.0
     progress_anchor = max(0.0, min(1.0, 0.5 + polarity))
+    
+    # Check if text is Hinglish and get additional features
+    if is_hinglish_text(text):
+        hinglish_features = extract_hinglish_features(text)
+        # Blend English and Hinglish features for better accuracy
+        base_features = [
+            max(-1.0, min(1.0, polarity)),
+            max(0.0, min(1.0, volatility)),
+            harsh,
+            threat,
+            manipulation,
+            max(0.0, min(1.0, caps)),
+            short_reply,
+            progress_anchor
+        ]
+        # Weighted blend: 60% traditional features, 40% Hinglish features
+        blended = [
+            0.6 * base + 0.4 * hind
+            for base, hind in zip(base_features, hinglish_features)
+        ]
+        return blended
+    
     return [
         max(-1.0, min(1.0, polarity)),
         max(0.0, min(1.0, volatility)),
@@ -825,8 +868,14 @@ def get_model_report():
     if "evaluation" not in summary:
         bundle = dataset_bundle()
         summary["evaluation"] = SEQUENCE_MODEL.evaluate(bundle["eval_sequences"], bundle["eval_labels"])
+    
+    # Add language support info
+    languages = ["english", "hinglish"] if MODEL_TYPE == "bilingual" else ["english"]
+    
     return {
         "name": "bootstrapped-rnn",
+        "model_type": MODEL_TYPE,
+        "languages_supported": languages,
         "artifact_path": MODEL_PATH,
         "summary": summary
     }
@@ -1070,6 +1119,9 @@ def on_message(data):
             del rooms[room]
         return
 
+    # Get message index before broadcasting
+    msg_index = len(rooms[room]['history']) - 1
+    
     # Broadcast the message with metadata
     emit('message', {
         'username': username,
@@ -1083,10 +1135,17 @@ def on_message(data):
         'level': level,
         'alert': alert,
         'timestamp': datetime.now().strftime('%H:%M'),
+        'msg_index': msg_index,
     }, to=room)
 
     # Broadcast escalation / vibe update
     timeline = [{'p': h['p']} for h in rooms[room]['history'][-20:]]
+    
+    # Analyze vibe energy and flags
+    vibe_analysis = analyze_vibe_energy(rooms[room]['history'])
+    spicy_alert = get_spicy_alert(text, mood, polarity)
+    flags_analysis = detect_red_green_flags(rooms[room]['history'])
+    
     emit('ai_update', {
         'level': level,
         'label': label,
@@ -1098,6 +1157,16 @@ def on_message(data):
         'prediction': predict_response(polarity, level, drift.get('forecast_score')),
         'sender': username,
         'drift': drift
+    }, to=room)
+    
+    # Emit vibe meter update
+    emit('vibe_update', {
+        'energy': vibe_analysis['energy'],
+        'trend': vibe_analysis['trend'],
+        'emoji': vibe_analysis['emoji'],
+        'alert': spicy_alert,
+        'green_flags': flags_analysis['highlights'][:3],
+        'red_flags': flags_analysis['flags'][:2]
     }, to=room)
 
     if should_fact_check(text):
@@ -1325,6 +1394,570 @@ def on_fact_check(data):
     if result:
         _cache_set('fact', cache_key, result)
         emit('fact_check', {'fact': result})
+
+# ── Message Reactions ──────────────────────────────────────────────────────
+
+@socketio.on('react')
+def on_react(data):
+    """Handle emoji reactions on messages"""
+    room = data.get('room', '')
+    msg_index = data.get('msg_index', -1)
+    emoji = data.get('emoji', '❤️')
+    username = data.get('username', 'Unknown')
+    
+    if room not in rooms or msg_index < 0 or msg_index >= len(rooms[room]['history']):
+        return
+    
+    # Initialize reactions if not present
+    msg = rooms[room]['history'][msg_index]
+    if 'reactions' not in msg:
+        msg['reactions'] = {}
+    if emoji not in msg['reactions']:
+        msg['reactions'][emoji] = []
+    
+    # Add reaction (avoid duplicates from same user)
+    if username not in msg['reactions'][emoji]:
+        msg['reactions'][emoji].append(username)
+    
+    # Broadcast reaction update
+    emit('reaction_update', {
+        'msg_index': msg_index,
+        'emoji': emoji,
+        'reactions': msg['reactions'],
+        'username': username
+    }, to=room)
+
+@socketio.on('remove_reaction')
+def on_remove_reaction(data):
+    """Remove emoji reaction from message"""
+    room = data.get('room', '')
+    msg_index = data.get('msg_index', -1)
+    emoji = data.get('emoji', '❤️')
+    username = data.get('username', 'Unknown')
+    
+    if room not in rooms or msg_index < 0 or msg_index >= len(rooms[room]['history']):
+        return
+    
+    msg = rooms[room]['history'][msg_index]
+    if 'reactions' in msg and emoji in msg['reactions']:
+        if username in msg['reactions'][emoji]:
+            msg['reactions'][emoji].remove(username)
+        if not msg['reactions'][emoji]:
+            del msg['reactions'][emoji]
+    
+    emit('reaction_update', {
+        'msg_index': msg_index,
+        'emoji': emoji,
+        'reactions': msg.get('reactions', {}),
+        'username': username
+    }, to=room)
+
+# ── Photo Upload ────────────────────────────────────────────────────────────
+
+@app.route('/upload', methods=['POST'])
+def upload_photo():
+    """File upload endpoint for photos"""
+    if 'photo' not in request.files:
+        return jsonify({'error': 'No photo provided'}), 400
+    
+    file = request.files['photo']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'File type not allowed. Use: jpg, jpeg, png, gif, webp'}), 400
+    
+    try:
+        filename = secure_filename(f"{secrets.token_hex(8)}_{file.filename}")
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'url': f'/photo/{filename}'
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/photo/<filename>')
+def serve_photo(filename):
+    """Serve uploaded photos"""
+    try:
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(filename))
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'Photo not found'}), 404
+        return send_file(filepath)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ── Game API Routes ────────────────────────────────────────────────────────────
+
+@app.route('/api/game/create', methods=['POST'])
+def create_game():
+    """Create a new game session with invite code"""
+    try:
+        data = request.json
+        game_type = data.get('game_type', 'compatibility_quiz')
+        username = data.get('username', 'Player')
+        
+        # Generate unique game code
+        game_code = secrets.token_hex(4).upper()
+        while game_code in game_sessions:
+            game_code = secrets.token_hex(4).upper()
+        
+        # Initialize game session
+        game_sessions[game_code] = {
+            'game_type': game_type,
+            'creator': username,
+            'players': [username],
+            'state': 'waiting',  # waiting, playing, finished
+            'answers': {username: {}},
+            'created_at': datetime.now().isoformat(),
+            'room_id': game_code
+        }
+        
+        return jsonify({
+            'success': True,
+            'game_code': game_code,
+            'game_type': game_type
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/game/<game_code>', methods=['GET'])
+def get_game_details(game_code):
+    """Get game session details"""
+    try:
+        if game_code not in game_sessions:
+            return jsonify({'error': 'Game not found'}), 404
+        
+        game = game_sessions[game_code]
+        return jsonify({
+            'game_code': game_code,
+            'game_type': game['game_type'],
+            'players': game['players'],
+            'state': game['state'],
+            'creator': game['creator']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/game/<game_code>/join', methods=['POST'])
+def join_game(game_code):
+    """Join an existing game"""
+    try:
+        if game_code not in game_sessions:
+            return jsonify({'success': False, 'error': 'Game code not found'}), 404
+        
+        data = request.json
+        username = data.get('username', 'Player')
+        
+        game = game_sessions[game_code]
+        
+        # Check if already joined
+        if username in game['players']:
+            return jsonify({
+                'success': True,
+                'message': 'Already in game',
+                'game_code': game_code,
+                'game_type': game['game_type']
+            })
+        
+        # Add player
+        if len(game['players']) < 2:
+            game['players'].append(username)
+            game['answers'][username] = {}
+            
+            # If we now have 2 players, start the game
+            if len(game['players']) == 2:
+                game['state'] = 'playing'
+            
+            return jsonify({
+                'success': True,
+                'game_code': game_code,
+                'game_type': game['game_type'],
+                'players': game['players'],
+                'state': game['state']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Game is full (2/2 players)'
+            }), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ── Vibe Analysis & Game Helpers ────────────────────────────────────────────────────────────
+
+def analyze_vibe_energy(history):
+    """Analyze conversation energy trajectory"""
+    if len(history) < 2:
+        return {'energy': 0, 'trend': 'starting', 'emoji': '🌟'}
+    
+    recent = history[-5:]
+    polarities = [h.get('p', 0) for h in recent]
+    avg_polarity = sum(polarities) / len(polarities)
+    
+    if len(polarities) > 1:
+        trend = 'rising' if polarities[-1] > polarities[0] else 'falling'
+    else:
+        trend = 'stable'
+    
+    # Map polarity to energy
+    if avg_polarity > 0.5:
+        emoji = '🔥'
+    elif avg_polarity > 0.2:
+        emoji = '✨'
+    elif avg_polarity > -0.2:
+        emoji = '😊'
+    elif avg_polarity > -0.5:
+        emoji = '😕'
+    else:
+        emoji = '❄️'
+    
+    return {'energy': avg_polarity, 'trend': trend, 'emoji': emoji}
+
+def get_spicy_alert(text, mood, polarity):
+    """Generate spicy real-time alerts based on message"""
+    alerts = []
+    
+    if '?' in text and len(text) > 30:
+        alerts.append('🎯 Deep question incoming!')
+    if mood == 'HAPPY' and polarity > 0.6:
+        alerts.append('🔥 Chemistry alert!')
+    if mood == 'UPSET' or mood == 'ANGRY':
+        alerts.append('⚠️ Plot twist!')
+    if 'haha' in text.lower() or 'lol' in text.lower():
+        alerts.append('😂 They\'re laughing!')
+    if text.endswith('...'):
+        alerts.append('👀 Suspense...')
+    
+    return alerts[0] if alerts else None
+
+def detect_red_green_flags(history):
+    """Analyze conversation for positive and negative patterns"""
+    if len(history) < 3:
+        return {'flags': [], 'highlights': []}
+    
+    recent = history[-10:]
+    flags = []
+    highlights = []
+    
+    for i, msg in enumerate(recent):
+        text = msg.get('text', '').lower()
+        mood = msg.get('mood', '')
+        
+        # Green flags
+        if '?' in text and len(text) > 25:
+            highlights.append('Asked thoughtful questions')
+        if msg.get('mood') == 'HAPPY':
+            highlights.append('Bringing positive energy')
+        if 'you' in text and 'think' in text:
+            highlights.append('Showing genuine interest')
+        
+        # Red flags
+        if msg.get('harsh'):
+            flags.append('Harsh language detected')
+        if msg.get('mood') == 'ANGRY':
+            flags.append('Getting heated')
+        if text.count('no') > 2 or text.count('don\'t') > 2:
+            flags.append('Possible disagreement')
+    
+    return {'flags': list(set(flags)), 'highlights': list(set(highlights))}
+
+# ── Compatibility Game State ────────────────────────────────────────────────
+game_sessions = {}  # room_id -> {game_type, users, questions, answers, scores}
+
+@socketio.on('start_game')
+def on_start_game(data):
+    """Start a compatibility game"""
+    room = data.get('room', '')
+    game_type = data.get('game_type', 'dark_fantasy')  # dark_fantasy, cards
+    username = data.get('username', 'Unknown')
+    
+    if room not in rooms:
+        return
+    
+    if room not in game_sessions:
+        game_sessions[room] = {
+            'game_type': game_type,
+            'state': 'waiting',
+            'users': {username},
+            'player1_answers': {},
+            'player2_answers': {},
+            'scores': {}
+        }
+    else:
+        game_sessions[room]['users'].add(username)
+        game_sessions[room]['state'] = 'in_progress'
+    
+    # Notify room
+    emit('game_started', {
+        'game_type': game_type,
+        'message': f'{username} started a {game_type} game!',
+        'users': list(game_sessions[room]['users'])
+    }, to=room)
+
+@socketio.on('submit_game_answer')
+def on_submit_game_answer(data):
+    """Submit answer to game question"""
+    room = data.get('room', '')
+    username = data.get('username', 'Unknown')
+    question_id = data.get('question_id', 0)
+    answer = data.get('answer', '')
+    answer_type = data.get('answer_type', 'self')  # self or other
+    
+    if room not in game_sessions:
+        return
+    
+    # Store answer
+    if username not in game_sessions[room]['player1_answers']:
+        game_sessions[room]['player1_answers'][username] = {}
+    
+    game_sessions[room]['player1_answers'][username][f'q{question_id}_{answer_type}'] = answer
+    
+    # Notify other player
+    emit('game_answer_submitted', {
+        'question_id': question_id,
+        'answer_type': answer_type,
+        'message': f'{username} answered!'
+    }, to=room, skip_sid=request.sid)
+
+@socketio.on('get_game_score')
+def on_get_game_score(data):
+    """Calculate and return game compatibility score"""
+    room = data.get('room', '')
+    
+    if room not in game_sessions:
+        emit('game_score', {'error': 'Game not found'})
+        return
+    
+    # Calculate matching answers
+    answers = game_sessions[room]['player1_answers']
+    score = 0
+    total = 0
+    
+    for username, user_answers in answers.items():
+        for key, answer in user_answers.items():
+            if 'self' in key:
+                other_key = key.replace('self', 'other')
+                if other_key in user_answers:
+                    total += 1
+                    if user_answers[other_key].lower() == answer.lower():
+                        score += 1
+    
+    compatibility = int((score / total * 100) if total > 0 else 0)
+    
+    emit('game_score', {
+        'compatibility': compatibility,
+        'matched': score,
+        'total': total,
+        'message': f'You know each other {compatibility}%!'
+    }, to=room)
+
+@socketio.on('screenshot_vibe')
+def on_screenshot_vibe(data):
+    """Generate shareable vibe report"""
+    room = data.get('room', '')
+    
+    if room not in rooms:
+        return
+    
+    history = rooms[room]['history']
+    polarity_scores = [h.get('p', 0) for h in history]
+    avg_polarity = sum(polarity_scores) / len(polarity_scores) if polarity_scores else 0
+    
+    vibe_analysis = analyze_vibe_energy(history)
+    flags_analysis = detect_red_green_flags(history)
+    
+    # Find best moment
+    best_moment_idx = -1
+    best_polarity = -2
+    for i, h in enumerate(history):
+        if h.get('p', 0) > best_polarity:
+            best_polarity = h.get('p', 0)
+            best_moment_idx = i
+    
+    report = {
+        'chemistry': min(100, int(avg_polarity * 100 + 50)),
+        'vibe_emoji': vibe_analysis['emoji'],
+        'green_flags': flags_analysis['highlights'][:3],
+        'red_flags': flags_analysis['flags'][:2],
+        'best_moment': history[best_moment_idx]['text'] if best_moment_idx >= 0 else 'Great vibes!',
+        'message_count': len(history),
+        'room_code': room
+    }
+    
+    emit('vibe_screenshot', report, to=room)
+
+@socketio.on('photo_share')
+def on_photo_share(data):
+    """Handle photo sharing in chat"""
+    room = data.get('room', '')
+    username = data.get('username', 'Unknown')
+    photo_url = data.get('photo_url', '')
+    message = data.get('message', '')
+    
+    if not photo_url or room not in rooms:
+        return
+    
+    # Add photo message to history
+    rooms[room]['history'].append({
+        'username': username,
+        'text': message or '[Shared a photo]',
+        'photo_url': photo_url,
+        'is_photo': True,
+        'p': 0.0,
+        'mood': 'HAPPY',
+        'harsh': False,
+        'sexual': False,
+        'ts': datetime.now().strftime('%H:%M'),
+        'reactions': {}
+    })
+    
+    if len(rooms[room]['history']) > 150:
+        rooms[room]['history'] = rooms[room]['history'][-150:]
+    
+    # Get photo message index
+    photo_msg_index = len(rooms[room]['history']) - 1
+    
+    # Broadcast photo
+    emit('photo_message', {
+        'username': username,
+        'photo_url': photo_url,
+        'message': message or '[Shared a photo]',
+        'timestamp': datetime.now().strftime('%H:%M'),
+        'mood': 'HAPPY',
+        'msg_index': photo_msg_index
+    }, to=room)
+
+# ── Game Session Handlers ───────────────────────────────────────────────────
+
+@socketio.on('game_join')
+def on_game_join(data):
+    """Player joins a game session"""
+    game_code = data.get('game_code', '')
+    username = data.get('username', 'Player')
+    
+    if game_code not in game_sessions:
+        emit('game_error', {'error': 'Game not found'})
+        return
+    
+    game = game_sessions[game_code]
+    
+    # Join the socket room
+    join_room(game_code)
+    
+    # Notify others in the game
+    emit('game_player_joined', {
+        'players': game['players'],
+        'game_state': game['state'],
+        'new_player': username
+    }, to=game_code)
+
+@socketio.on('game_answer_submit')
+def on_game_answer_submit(data):
+    """Player submits game answers"""
+    game_code = data.get('game_code', '')
+    username = data.get('username', '')
+    question_id = data.get('question_id')
+    answer = data.get('answer', '')
+    
+    if game_code not in game_sessions:
+        return
+    
+    game = game_sessions[game_code]
+    
+    if username not in game['answers']:
+        game['answers'][username] = {}
+    
+    # Store directly by question ID
+    game['answers'][username][question_id] = answer
+    
+    emit('game_answer_recorded', {
+        'username': username,
+        'question_id': question_id
+    }, to=game_code)
+
+@socketio.on('game_get_results')
+def on_game_get_results(data):
+    """Calculate game results"""
+    game_code = data.get('game_code', '')
+    
+    if game_code not in game_sessions:
+        return
+    
+    game = game_sessions[game_code]
+    
+    # All game types now use the exact same matching logic for preferences
+    if len(game['players']) != 2:
+        emit('game_error', {'error': 'Need 2 players to get results'})
+        return
+    
+    player1, player2 = game['players'][0], game['players'][1]
+    p1_answers = game['answers'].get(player1, {})
+    p2_answers = game['answers'].get(player2, {})
+    
+    # Calculate matching preferences
+    matched = 0
+    total = 0
+    
+    for q_id, p1_ans in p1_answers.items():
+        if q_id in p2_answers:
+            total += 1
+            p2_ans = p2_answers[q_id]
+            if p1_ans and p2_ans:
+                if str(p1_ans).lower() == str(p2_ans).lower():
+                    matched += 1
+    
+    if total == 0:
+        total = 1
+    
+    compatibility = int((matched / total) * 100) if total > 0 else 0
+    
+    results = {
+        'compatibility': compatibility,
+        'matched': matched,
+        'total': total,
+        'player1': player1,
+        'player2': player2,
+        'player1_answers': p1_answers,
+        'player2_answers': p2_answers,
+        'message': get_compatibility_message(compatibility)
+    }
+    
+    game['state'] = 'finished'
+    game['results'] = results
+    
+    emit('game_results', results, to=game_code)
+
+@socketio.on('game_play_again')
+def on_game_play_again(data):
+    """Reset game for another round"""
+    game_code = data.get('game_code', '')
+    
+    if game_code not in game_sessions:
+        return
+    
+    game = game_sessions[game_code]
+    game['state'] = 'playing'
+    game['answers'] = {player: {} for player in game['players']}
+    
+    emit('game_reset', {'status': 'ready'}, to=game_code)
+
+def get_compatibility_message(score):
+    """Get encouraging message based on compatibility score"""
+    if score >= 80:
+        return "🔥 You know each other SO well!"
+    elif score >= 60:
+        return "💚 Pretty good connection!"
+    elif score >= 40:
+        return "🤔 Getting there!"
+    elif score >= 20:
+        return "👀 Room to grow!"
+    else:
+        return "🌱 Time to learn more about each other!"
 
 # ── Run ─────────────────────────────────────────────────────────────────────
 

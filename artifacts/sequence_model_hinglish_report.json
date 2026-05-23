@@ -1,0 +1,29 @@
+{
+  "model_type": "bilingual_english_hinglish",
+  "model_path": "D:\\Btech Projects\\SidekickAI\\artifacts\\sequence_model_hinglish.json",
+  "languages_supported": [
+    "english",
+    "hinglish"
+  ],
+  "training_summary": {
+    "epochs": 35,
+    "samples": 528,
+    "final_loss": 0.1492,
+    "training_accuracy": 0.949,
+    "evaluation": {
+      "threshold": 0.5,
+      "samples": 132,
+      "accuracy": 0.924,
+      "precision": 0.894,
+      "recall": 0.952,
+      "f1": 0.922,
+      "avg_confidence": 0.962,
+      "confusion": {
+        "tp": 59,
+        "tn": 63,
+        "fp": 7,
+        "fn": 3
+      }
+    }
+  }
+}
