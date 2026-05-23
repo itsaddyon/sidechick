@@ -717,7 +717,7 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   .app-shell{display:flex !important;flex-direction:column !important;flex:1 !important;min-height:0 !important;overflow:hidden !important;padding:0 !important;grid-template-columns:none !important}
 
   /* Chat panel */
-  #chat-panel,.workspace-column{display:flex !important;flex-direction:column !important;flex:1 !important;width:100% !important;min-height:0 !important;overflow:hidden !important;height:auto !important;border-radius:0 !important;border-left:none !important;border-right:none !important;box-shadow:none !important}
+  #chat-panel,.workspace-column{display:flex !important;flex-direction:column !important;flex:1 !important;width:100% !important;min-height:0 !important;overflow:hidden !important;height:100% !important;border-radius:0 !important;border-left:none !important;border-right:none !important;box-shadow:none !important}
 
   /* Workspace header: Compact & Sleek to save vertical space */
   .workspace-header{padding:8px 12px !important;flex-shrink:0 !important;gap:4px;border-bottom:1px solid rgba(255,255,255,0.05) !important}
