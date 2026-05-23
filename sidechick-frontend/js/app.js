@@ -2039,12 +2039,15 @@ async function submitGameName() {
     return;
   }
   
+  const gameType = pendingGameType;
+  const gameCode = pendingGameCode;
+  
   closeGameModal();
   
-  if (pendingGameType === 'join') {
+  if (gameType === 'join') {
     // JOIN GAME FLOW
     try {
-      const response = await fetch(BACKEND_URL + `/api/game/${pendingGameCode}/join`, {
+      const response = await fetch(BACKEND_URL + `/api/game/${gameCode}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username })
@@ -2070,14 +2073,14 @@ async function submitGameName() {
       const response = await fetch(BACKEND_URL + '/api/game/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game_type: pendingGameType, username })
+        body: JSON.stringify({ game_type: gameType, username })
       });
       
       const data = await response.json();
       if(data.success) {
         currentGameCode = data.game_code;
-        currentGameType = pendingGameType;
-        showGameScreen(pendingGameType, data.game_code, username);
+        currentGameType = gameType;
+        showGameScreen(gameType, data.game_code, username);
         
         socket.emit('game_join', { game_code: data.game_code, username });
       } else {
