@@ -1,6 +1,17 @@
 // ── Config ───────────────────────────────────────────────────
 const BACKEND_URL = window.location.hostname.includes('vercel.app')
   ? 'https://sidechick-syej.onrender.com' : '';
+// --- PRE-WARM RENDER BACKEND ON LAND ---
+// Instantly wakes up the Render free tier container while the user is typing/deciding
+if (BACKEND_URL) {
+  console.log("⚡ Sending silent pre-warm ping to Render backend...");
+  fetch(BACKEND_URL + '/api/ai-status').then(res => {
+     console.log("✨ Render backend is fully awake and responsive!");
+  }).catch(err => {
+     console.warn("⚠️ Render backend wake-up ping failed:", err);
+  });
+}
+
 const socket = io(BACKEND_URL);
 // --- PREMIUM TOAST NOTIFICATIONS ---
 function showToast(message, type = 'info') {
@@ -2042,7 +2053,27 @@ async function submitGameName() {
   const gameType = pendingGameType;
   const gameCode = pendingGameCode;
   
-  closeGameModal();
+  // Show premium loading spinner on the submit button
+  const submitBtn = document.querySelector('#game-name-modal .primary-btn');
+  const originalBtnText = submitBtn ? submitBtn.textContent : "Let's Go";
+  if(submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="loading-spinner"></span> Connecting...`;
+  }
+  
+  // Clean up global states
+  const modalEl = document.getElementById('game-name-modal');
+  if(modalEl) modalEl.style.display = 'none';
+  pendingGameType = '';
+  pendingGameCode = '';
+  
+  // Helper to restore button state
+  const restoreButton = () => {
+    if(submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalBtnText;
+    }
+  };
   
   if (gameType === 'join') {
     // JOIN GAME FLOW
@@ -2061,10 +2092,10 @@ async function submitGameName() {
         
         socket.emit('game_join', { game_code: data.game_code, username });
       } else {
-        showToast(data.error || 'Invalid code', 'error');
+        showToast(data.error || 'Invalid code', 'error'); restoreButton();
       }
     } catch(e) {
-      showToast(e.message, 'error');
+      showToast(e.message, 'error'); restoreButton();
       console.error('joinGame error:', e);
     }
   } else {
@@ -2084,10 +2115,10 @@ async function submitGameName() {
         
         socket.emit('game_join', { game_code: data.game_code, username });
       } else {
-        showToast(data.error || 'Error creating game', 'error');
+        showToast(data.error || 'Error creating game', 'error'); restoreButton();
       }
     } catch(e) {
-      showToast(e.message, 'error');
+      showToast(e.message, 'error'); restoreButton();
       console.error('createGame error:', e);
     }
   }
