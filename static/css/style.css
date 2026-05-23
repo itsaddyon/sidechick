@@ -642,15 +642,16 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
 
   /* App screen: Anchor perfectly to viewport, no overflow, no bottom padding */
   #app.app-screen{
-    position: fixed !important;
-    inset: 0 !important;
-    height: 100% !important;
-    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100dvh !important;
+    width: 100vw !important;
     overflow: hidden !important;
     background: var(--bg-grad-4) !important;
     z-index: 500 !important;
     padding: 0 !important;
     margin: 0 !important;
+    position: relative !important;
   }
 
   /* Topbar: 2-row grid — row1: brand + hamburger, row2: dropdown */
@@ -724,28 +725,31 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   body.theme-dark .topbar-dropdown .dd-btn{border-color:rgba(76,232,255,.15)}
   body.theme-dark .topbar-dropdown .dd-badge{border-color:rgba(76,232,255,.15)}
 
-  /* Shell: absolute layout */
+  /* Shell: flex child */
   .app-shell{
-    position: absolute !important;
-    inset: 0 !important;
-    height: 100% !important;
-    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
     overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
+    position: relative !important;
   }
 
-  /* Chat panel: absolute layout */
+  /* Chat panel: flex layout */
   #chat-panel,.workspace-column{
-    position: absolute !important;
-    inset: 0 !important;
-    height: 100% !important;
-    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
     overflow: hidden !important;
+    height: 100% !important;
     border-radius: 0 !important;
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
+    position: relative !important;
   }
 
   /* Hide redundant workspace header completely on mobile to maximize chat room height */
@@ -753,22 +757,21 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     display: none !important;
   }
 
-  /* Messages: Absolute layout lock between header and composer */
+  /* Messages: Clean flex-grow middle container */
   .messages{
-    position: absolute !important;
-    top: calc(54px + env(safe-area-inset-top)) !important;
-    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
-    left: 0 !important;
-    right: 0 !important;
+    flex: 1 !important;
+    min-height: 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     padding: 12px 14px 16px !important;
+    padding-top: calc(70px + env(safe-area-inset-top)) !important; /* Buffer for the fixed topbar */
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-y: contain !important;
     z-index: 1 !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 12px !important;
+    position: relative !important;
   }
   #app:not(.ai-off) .messages{background:transparent !important;box-shadow:none !important}
   #app:not(.ai-off) .messages::before{display:none !important}
@@ -799,12 +802,13 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   .mob-det-info span{font-size:.78rem;color:var(--muted);display:block;line-height:1.2}
   .toggle-det-btn{flex-shrink:0;white-space:nowrap;padding:8px 12px !important;font-size:.78rem !important;min-height:36px !important;-webkit-tap-highlight-color:transparent}
   
-  /* Show mobile detective bar and shift messages up ONLY when detective mode is ON */
+  /* Show mobile detective bar ONLY when detective mode is ON */
   .app-screen[data-detective-mode="on"] .mobile-detective-bar{
     display: flex !important;
-  }
-  .app-screen[data-detective-mode="on"] .messages {
-    bottom: calc(142px + env(safe-area-inset-bottom)) !important;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
   }
 
   /* AI panel: SIDEBAR DRAWER on mobile */
