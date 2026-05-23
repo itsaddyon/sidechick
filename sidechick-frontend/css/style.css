@@ -2048,6 +2048,11 @@ body.theme-dark .scorecard { background: rgba(10,16,28,0.85); }
 
 /* Force a completely solid black-navy background on active game screen */
 /* This hides all background screens 100% and prevents any transparency bleed-through */
+#game-screen {
+  display: none !important;
+}
+
+#game-screen.is-active,
 body.game-active #game-screen {
   display: flex !important;
   visibility: visible !important;
@@ -2064,12 +2069,11 @@ body.game-active #game-screen {
   overflow: hidden !important;
 }
 
-/* Force game-screen to fill dynamic viewport exactly */
+/* Base style for game-screen class without overriding the display */
 .game-screen {
   position: fixed !important;
   inset: 0 !important;
   z-index: 9999 !important;
-  display: flex !important;
   flex-direction: column !important;
   height: 100dvh !important;
   width: 100vw !important;
