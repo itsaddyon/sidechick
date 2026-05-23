@@ -2,6 +2,67 @@
 const BACKEND_URL = window.location.hostname.includes('vercel.app')
   ? 'https://sidechick-syej.onrender.com' : '';
 const socket = io(BACKEND_URL);
+// --- PREMIUM TOAST NOTIFICATIONS ---
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'premium-toast';
+  toast.textContent = message;
+  
+  if(type === 'error') toast.style.borderLeft = '4px solid var(--red)';
+  if(type === 'success') toast.style.borderLeft = '4px solid var(--green)';
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Override alert
+window.alert = function(msg) {
+  showToast(msg, 'error');
+};
+
+// --- ONE-CLICK INVITE LINKS ---
+function copyInviteLink() {
+  if (!currentGameCode) return;
+  const inviteUrl = window.location.origin + window.location.pathname + '?game=' + currentGameCode;
+  navigator.clipboard.writeText(inviteUrl).then(() => {
+    showToast('✨ Invite Link Copied! Send it to your partner.', 'success');
+  }).catch(() => {
+    showToast('Failed to copy link.', 'error');
+  });
+}
+
+// Check URL for Auto-Join
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const gameToJoin = urlParams.get('game');
+  if (gameToJoin) {
+     const codeInput = document.getElementById('game-code-input');
+     if(codeInput) codeInput.value = gameToJoin;
+     showToast('✨ Invite code applied! Enter your name to join.', 'success');
+     
+     pendingGameCode = gameToJoin;
+     pendingGameType = 'join';
+     
+     // Delay slightly to let layout load
+     setTimeout(() => {
+       const titleEl = document.getElementById('game-modal-title');
+       if(titleEl) titleEl.textContent = 'Joining Game';
+       const modalEl = document.getElementById('game-name-modal');
+       if(modalEl) modalEl.style.display = 'flex';
+       const nameInput = document.getElementById('modal-game-username');
+       if(nameInput) nameInput.focus();
+     }, 500);
+     
+     window.history.replaceState({}, document.title, window.location.pathname);
+  }
+});
+
 
 // ── State ─────────────────────────────────────────────────────
 let myName='',myRoom='',ghostText='',typingTimer=null;
@@ -312,7 +373,7 @@ function initSidekickControls(){
 
 // ── Enter / Leave Room ─────────────────────────────────────────
 function joinChat(){
-  const u=(document.getElementById('username-input').value||'').trim();
+  const u=((document.getElementById('username-input') || document.getElementById('chat-username-input')).value||'').trim();
   if(!u){alert('Enter your name first.');return}
   if(roomMode==='open'){startOpenMatch(u);return}
   const r=(document.getElementById('room-input').value||'').trim();
@@ -1916,80 +1977,116 @@ const GAME_DATA = {
   }
 };
 
-async function createGame(gameType) {
-  const nameInput = document.getElementById('game-username-input');
-  const username = nameInput ? nameInput.value.trim() : '';
-  
-  if(!username) {
-    alert('Please enter your name first');
-    nameInput?.focus();
-    return;
-  }
-  
-  try {
-    const response = await fetch(BACKEND_URL + '/api/game/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game_type: gameType, username })
-    });
-    
-    const data = await response.json();
-    if(data.success) {
-      currentGameCode = data.game_code;
-      currentGameType = gameType;
-      showGameScreen(gameType, data.game_code, username);
-      
-      // Join socket room as creator so we receive player joined events
-      socket.emit('game_join', { game_code: data.game_code, username });
-    } else {
-      alert('Error creating game: ' + data.error);
-    }
-  } catch(e) {
-    alert('Error: ' + e.message);
-    console.error('createGame error:', e);
+let pendingGameType = '';
+let pendingGameCode = '';
+
+function createGame(gameType) {
+  pendingGameType = gameType;
+  const titles = {
+    'compatibility_quiz': 'Compatibility Quiz',
+    'spicy_or_sweet': 'Spicy or Sweet',
+    'couple_trivia': 'Couple Trivia',
+    'truth_or_lie': 'Truth or Lie'
+  };
+  const titleEl = document.getElementById('game-modal-title');
+  if(titleEl) titleEl.textContent = 'Starting ' + (titles[gameType] || 'Game');
+  const modalEl = document.getElementById('game-name-modal');
+  if(modalEl) modalEl.style.display = 'flex';
+  const nameInput = document.getElementById('modal-game-username');
+  if(nameInput) {
+    nameInput.value = '';
+    nameInput.focus();
   }
 }
 
-async function joinGameWithCode() {
-  const nameInput = document.getElementById('game-username-input');
+function joinGameWithCode() {
   const codeInput = document.getElementById('game-code-input');
-  
-  const username = nameInput ? nameInput.value.trim() : '';
   const gameCode = codeInput ? codeInput.value.trim().toUpperCase() : '';
   
-  if(!username) {
-    alert('Please enter your name');
-    nameInput?.focus();
-    return;
-  }
-  
   if(!gameCode) {
-    alert('Please enter a game code');
+    showToast('Please enter a game code', 'error');
     codeInput?.focus();
     return;
   }
   
-  try {
-    const response = await fetch(BACKEND_URL + `/api/game/${gameCode}/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username })
-    });
-    
-    const data = await response.json();
-    if(data.success) {
-      currentGameCode = gameCode;
-      currentGameType = data.game_type;
-      showGameScreen(data.game_type, gameCode, username);
+  pendingGameCode = gameCode;
+  pendingGameType = 'join';
+  const titleEl = document.getElementById('game-modal-title');
+  if(titleEl) titleEl.textContent = 'Joining Game';
+  const modalEl = document.getElementById('game-name-modal');
+  if(modalEl) modalEl.style.display = 'flex';
+  const nameInput = document.getElementById('modal-game-username');
+  if(nameInput) {
+    nameInput.value = '';
+    nameInput.focus();
+  }
+}
+
+function closeGameModal() {
+  const modalEl = document.getElementById('game-name-modal');
+  if(modalEl) modalEl.style.display = 'none';
+  pendingGameType = '';
+  pendingGameCode = '';
+}
+
+async function submitGameName() {
+  const nameInput = document.getElementById('modal-game-username');
+  const username = nameInput ? nameInput.value.trim() : '';
+  
+  if(!username) {
+    showToast('Please enter your name first', 'error');
+    nameInput?.focus();
+    return;
+  }
+  
+  closeGameModal();
+  
+  if (pendingGameType === 'join') {
+    // JOIN GAME FLOW
+    try {
+      const response = await fetch(BACKEND_URL + `/api/game/${pendingGameCode}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
       
-      // Join socket room
-      socket.emit('game_join', { game_code: gameCode, username });
-    } else {
-      alert('Error: ' + data.error);
+      const data = await response.json();
+      if(data.success) {
+        currentGameCode = data.game_code;
+        currentGameType = data.game_type || 'compatibility_quiz';
+        showGameScreen(currentGameType, data.game_code, username);
+        
+        socket.emit('game_join', { game_code: data.game_code, username });
+      } else {
+        showToast(data.error || 'Invalid code', 'error');
+      }
+    } catch(e) {
+      showToast(e.message, 'error');
+      console.error('joinGame error:', e);
     }
-  } catch(e) {
-    alert('Error: ' + e.message);
-    console.error('joinGameWithCode error:', e);
+  } else {
+    // CREATE GAME FLOW
+    try {
+      const response = await fetch(BACKEND_URL + '/api/game/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_type: pendingGameType, username })
+      });
+      
+      const data = await response.json();
+      if(data.success) {
+        currentGameCode = data.game_code;
+        currentGameType = pendingGameType;
+        showGameScreen(pendingGameType, data.game_code, username);
+        
+        socket.emit('game_join', { game_code: data.game_code, username });
+      } else {
+        showToast(data.error || 'Error creating game', 'error');
+      }
+    } catch(e) {
+      showToast(e.message, 'error');
+      console.error('createGame error:', e);
+    }
   }
 }
 
@@ -2142,7 +2239,7 @@ socket.on('open_match_waiting',(data)=>{setOpenMatchWaiting(true);setMatchStatus
 socket.on('open_match_cancelled',(data)=>{setOpenMatchWaiting(false);setMatchStatus((data&&data.message)||'','cancelled')});
 socket.on('open_match_found',(data)=>{
   if(!data||!data.room)return;
-  const username=(document.getElementById('username-input').value||'').trim();if(!username)return;
+  const username=((document.getElementById('username-input') || document.getElementById('chat-username-input')).value||'').trim();if(!username)return;
   setOpenMatchWaiting(false);setMatchStatus('Match found. Opening room…','found');
   enterRoom(username,data.room,data.peer?'Matched with '+data.peer+'.':'Matched in an open room.');
 });
@@ -2527,7 +2624,7 @@ function showGamePlay(gameType) {
   partnerAnswersTracker = {};
   
   // Select exactly 5 questions synchronized via the gameCode
-  sessionQuestions = getSyncedQuestions(gameType, currentGameCode, 5);
+  sessionQuestions = getSyncedQuestions(gameType, currentGameCode, 10);
   
   renderQuestion(currentQuestionIndex);
 }
@@ -2610,7 +2707,7 @@ function showGameResults(data) {
   
   // Fire Confetti!
   if (window.confetti) {
-    let duration = data.compatibility >= 80 ? 6000 : 2500;
+    let duration = data.compatibility >= 85 ? 6000 : 2500;
     const end = Date.now() + duration;
     
     (function frame() {
@@ -2631,7 +2728,7 @@ function showGameResults(data) {
       });
       
       // Crackers/Fireworks if >= 80%
-      if (data.compatibility >= 80 && Math.random() < 0.2) {
+      if (data.compatibility >= 85 && Math.random() < 0.2) {
         confetti({
           particleCount: 20,
           angle: Math.random() * 360,
@@ -2669,7 +2766,7 @@ function showGameResults(data) {
       <div class="score-number" id="animated-score">0%</div>
     </div>
     <div class="score-text">
-      <p class="score-msg">${data.compatibility >= 80 ? '✨' : ''} ${data.message}</p>
+      <p class="score-msg">${data.compatibility >= 85 ? '✨' : ''} ${data.message}</p>
       <p class="score-subtext">You matched ${data.matched} out of ${data.total} times.</p>
     </div>
   `;
@@ -2725,7 +2822,7 @@ function showGameResults(data) {
   });
   
   // Celebration Popup for high compatibility
-  if (data.compatibility >= 80) {
+  if (data.compatibility >= 85) {
     const oldPopup = document.getElementById('celebration-popup');
     if (oldPopup) oldPopup.remove();
     
