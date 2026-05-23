@@ -392,6 +392,8 @@ function joinChat(){
   enterRoom(u,r,"You're chatting as "+u+'.');
 }
 function enterRoom(username,room,subText){
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
   myName=username;myRoom=room;ghostText='';
   timelineData=[];messageHistory=[];msgCountSinceSummary=0;
   hideThreatStop();
