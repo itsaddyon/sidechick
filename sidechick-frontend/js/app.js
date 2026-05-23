@@ -959,7 +959,7 @@ let currentGameType = '';
 
 const GAME_DATA = {
   "compatibility_quiz": {
-    "emoji": "\ud83c\udfae",
+    "emoji": "🎮",
     "name": "Compatibility Quiz",
     "description": "Deep emotional & lifestyle alignment",
     "questions": [
@@ -988,7 +988,7 @@ const GAME_DATA = {
         "text": "What is your biggest relationship red flag?",
         "choices": [
           "Controlling behavior",
-          "Poor communication",
+          "Poor communication/silent treatment",
           "Lack of ambition",
           "Too clingy/needy"
         ]
@@ -1199,8 +1199,8 @@ const GAME_DATA = {
         "choices": [
           "I get heavily involved",
           "I avoid it at all costs",
-          "I vent about it constantly",
-          "I try to play peacemaker"
+          "I try to play peacemaker",
+          "I vent about it constantly"
         ]
       },
       {
@@ -1212,11 +1212,311 @@ const GAME_DATA = {
           "Deep, late-night conversations",
           "Physical closeness and cuddles"
         ]
+      },
+      {
+        "id": 101,
+        "text": "What is your stance on double dating?",
+        "choices": [
+          "Love it, it is so much fun!",
+          "Fine occasionally with close friends",
+          "I prefer 1-on-1 time only",
+          "Too much social energy required"
+        ]
+      },
+      {
+        "id": 102,
+        "text": "How do you feel about sleeping in separate blankets?",
+        "choices": [
+          "Dealbreaker, we must share!",
+          "Better sleep, so I support it",
+          "Only if the bed is small",
+          "I prefer my own blanket honestly"
+        ]
+      },
+      {
+        "id": 103,
+        "text": "What is your ultimate standard for a clean house?",
+        "choices": [
+          "Spotless, dust-free always",
+          "Cleaned once a week is fine",
+          "Lived-in and slightly messy is cozy",
+          "A complete organized chaos"
+        ]
+      },
+      {
+        "id": 104,
+        "text": "How do you react if I am super late for a date?",
+        "choices": [
+          "I get secretly annoyed/resentful",
+          "Totally chill, life happens",
+          "I text you constantly",
+          "I leave after 20 minutes"
+        ]
+      },
+      {
+        "id": 105,
+        "text": "What is your ideal vibe for a Friday night?",
+        "choices": [
+          "Going hard at a club/party",
+          "Intimate dinner or bar-hopping",
+          "Cozy movie night at home",
+          "Working on my personal goals"
+        ]
+      },
+      {
+        "id": 106,
+        "text": "How do you feel about posting your relationship online?",
+        "choices": [
+          "Hard launch immediately!",
+          "Soft launch only",
+          "Keep it 100% private, no posts",
+          "Only on major anniversaries"
+        ]
+      },
+      {
+        "id": 107,
+        "text": "What is your toxic trait in a relationship?",
+        "choices": [
+          "Sarcasm/teasing too much",
+          "Being overly clingy/needy",
+          "Overthinking literally everything",
+          "Bottling up my feelings"
+        ]
+      },
+      {
+        "id": 108,
+        "text": "How do you handle meeting a partner's parents?",
+        "choices": [
+          "Naturally charm them instantly",
+          "Get extremely nervous but fake it",
+          "Awkward and quiet",
+          "Try to avoid it as long as possible"
+        ]
+      },
+      {
+        "id": 109,
+        "text": "What is your view on having pets?",
+        "choices": [
+          "Dog person 100%",
+          "Cat person 100%",
+          "I want both dogs and cats",
+          "No pets inside the house please"
+        ]
+      },
+      {
+        "id": 110,
+        "text": "How do you feel about kids in the future?",
+        "choices": [
+          "Def want them (2 or more)",
+          "Maybe just one",
+          "Strictly no kids ever",
+          "Undecided, too early to tell"
+        ]
+      },
+      {
+        "id": 111,
+        "text": "What is your stance on political alignment in a partner?",
+        "choices": [
+          "Must align completely",
+          "Different views are fine if respectful",
+          "I do not care about politics at all",
+          "I love debating opposite views"
+        ]
+      },
+      {
+        "id": 112,
+        "text": "How do you prefer to resolve an argument?",
+        "choices": [
+          "Cool off alone first, then talk",
+          "Resolve it immediately, no sleeping mad",
+          "Write a long text explaining feelings",
+          "Hug it out and drop it"
+        ]
+      },
+      {
+        "id": 113,
+        "text": "How do you feel about your partner's dressing style?",
+        "choices": [
+          "They can wear whatever they want",
+          "I love giving style advice",
+          "I get secretly embarrassed sometimes",
+          "We should match vibes/styles"
+        ]
+      },
+      {
+        "id": 114,
+        "text": "What is your dream home location?",
+        "choices": [
+          "Penthouse in a bustling city",
+          "Suburban modern mansion",
+          "A cozy beach house",
+          "A secluded cabin in the mountains"
+        ]
+      },
+      {
+        "id": 115,
+        "text": "How do you handle social battery drainage?",
+        "choices": [
+          "I need to leave parties early",
+          "I push through and keep partying",
+          "I hide in a corner on my phone",
+          "I stay home in the first place"
+        ]
+      },
+      {
+        "id": 116,
+        "text": "What is your stance on gifting?",
+        "choices": [
+          "Love giving thoughtful/custom gifts",
+          "Prefer practical gifts I actually need",
+          "Experiences (trips/dates) > material gifts",
+          "I am bad at gifts, just buy me food"
+        ]
+      },
+      {
+        "id": 117,
+        "text": "How do you feel about sharing food?",
+        "choices": [
+          "\"Joey doesn't share food!\"",
+          "I love sharing and tasting everything",
+          "Only if you ask first",
+          "I will literally feed you from my plate"
+        ]
+      },
+      {
+        "id": 118,
+        "text": "What is your primary attachment style?",
+        "choices": [
+          "Secure and trusting",
+          "Anxious (needs constant reassurance)",
+          "Avoidant (pulls away when close)",
+          "Fearful-avoidant (confused/chaotic)"
+        ]
+      },
+      {
+        "id": 119,
+        "text": "How do you feel about high-energy social gatherings?",
+        "choices": [
+          "I thrive, I'm the life of the party",
+          "I enjoy it in small doses",
+          "Highly exhausting, I prefer close friends",
+          "I absolutely despise them"
+        ]
+      },
+      {
+        "id": 120,
+        "text": "What is your standard for \"cheating\"?",
+        "choices": [
+          "Only physical intimacy",
+          "Emotional affairs/deep secret chats",
+          "Flirting or liking thirst traps online",
+          "Deleting chats/hiding things"
+        ]
+      },
+      {
+        "id": 121,
+        "text": "How do you feel about matching outfits?",
+        "choices": [
+          "Cringe, absolutely not",
+          "Cute for photos/events",
+          "I would love to do it regularly",
+          "Only if it is subtle"
+        ]
+      },
+      {
+        "id": 122,
+        "text": "What is your approach to healthy eating?",
+        "choices": [
+          "Super strict, organic/macros",
+          "Eat clean during the week, cheat weekend",
+          "Pure junk food and zero regrets",
+          "I just eat whatever is fast and easy"
+        ]
+      },
+      {
+        "id": 123,
+        "text": "How do you handle career/academic stress?",
+        "choices": [
+          "Overwork myself to exhaustion",
+          "Procrastinate and stress out",
+          "Maintain a perfect work-life balance",
+          "Rant about it constantly"
+        ]
+      },
+      {
+        "id": 124,
+        "text": "What is your view on sleeping with the TV/music on?",
+        "choices": [
+          "Must be pitch black and absolute silence",
+          "Need white noise or a fan",
+          "I sleep with a show playing in background",
+          "I can sleep literally anywhere, anytime"
+        ]
+      },
+      {
+        "id": 125,
+        "text": "What is your view on long distance relationships?",
+        "choices": [
+          "No way, physical presence is mandatory",
+          "I can do it if there's an end date",
+          "I actually enjoy the extra personal space",
+          "Only if we call/FaceTime 24/7"
+        ]
+      },
+      {
+        "id": 126,
+        "text": "How do you feel about your partner going to a club without you?",
+        "choices": [
+          "Totally fine, I trust them completely",
+          "A bit anxious, but I say it's fine",
+          "I would prefer they don't go",
+          "Only if they stay on FaceTime"
+        ]
+      },
+      {
+        "id": 127,
+        "text": "What is your ideal morning routine?",
+        "choices": [
+          "Up early, gym, cold shower",
+          "Slow coffee, reading, chill vibes",
+          "Hit snooze 5 times, rush to get ready",
+          "Sleep until noon, no routine"
+        ]
+      },
+      {
+        "id": 128,
+        "text": "How do you handle holiday planning?",
+        "choices": [
+          "Plan every single detail/hour",
+          "Book flights, wing the rest",
+          "I let my partner plan everything",
+          "Total spontaneous adventure"
+        ]
+      },
+      {
+        "id": 129,
+        "text": "What is your opinion on horoscopes/astrology?",
+        "choices": [
+          "I live my life by it strictly",
+          "Fun to read, but don't take it seriously",
+          "Complete nonsense/pseudoscience",
+          "I only look at compatibility percentages"
+        ]
+      },
+      {
+        "id": 130,
+        "text": "How do you prefer to show appreciation?",
+        "choices": [
+          "Writing cute letters/long texts",
+          "Buying random little treats/coffee",
+          "Giving a massive tight hug/kiss",
+          "Helping you clean or do chores"
+        ]
       }
     ]
   },
   "spicy_or_sweet": {
-    "emoji": "\ud83c\udf36\ufe0f",
+    "emoji": "🌶️",
     "name": "Spicy or Sweet",
     "description": "Strictly NSFW & intimate preferences",
     "questions": [
@@ -1469,11 +1769,211 @@ const GAME_DATA = {
           "I just want to sleep immediately",
           "I prefer getting up and doing something"
         ]
+      },
+      {
+        "id": 131,
+        "text": "How do you feel about shower sex?",
+        "choices": [
+          "Extremely hot and romantic",
+          "Highly overrated/dangerous slip-hazard",
+          "Only if the shower is huge",
+          "Fun for a quickie only"
+        ]
+      },
+      {
+        "id": 132,
+        "text": "What is your stance on hickeys?",
+        "choices": [
+          "I love giving and receiving them",
+          "Only where they can be hidden",
+          "Strictly no hickeys (looks trashy)",
+          "I don't care either way"
+        ]
+      },
+      {
+        "id": 133,
+        "text": "How do you feel about over-the-clothes action?",
+        "choices": [
+          "Highly underrated and teasing",
+          "Just a waste of time, skip it",
+          "Cute for making out in public",
+          "Only if we are in a rush"
+        ]
+      },
+      {
+        "id": 134,
+        "text": "What is your stance on quickies?",
+        "choices": [
+          "Love them, super exciting",
+          "Too short, I need time",
+          "Only when we are about to go out",
+          "Only in public/semi-public spots"
+        ]
+      },
+      {
+        "id": 135,
+        "text": "What is your preference for music during intimacy?",
+        "choices": [
+          "Sensual R&B playlist",
+          "Lo-fi or soft background tracks",
+          "Complete silence is better",
+          "Funny/cringe playlist"
+        ]
+      },
+      {
+        "id": 136,
+        "text": "How do you feel about spanking?",
+        "choices": [
+          "Love it, hard as you can",
+          "Light slaps only",
+          "Only if I am doing the spanking",
+          "Absolutely not for me"
+        ]
+      },
+      {
+        "id": 137,
+        "text": "What is your stance on using food/dessert?",
+        "choices": [
+          "Whipped cream/chocolate is hot",
+          "Too messy, I hate sticky skin",
+          "Only ice cubes for cooling effects",
+          "Only in fantasies"
+        ]
+      },
+      {
+        "id": 138,
+        "text": "How do you feel about tickling during intimacy?",
+        "choices": [
+          "Ruins the mood completely",
+          "Actually a fun/cute turn-on",
+          "Only as a playful break",
+          "I am way too ticklish"
+        ]
+      },
+      {
+        "id": 139,
+        "text": "What is your stance on sending spicy texts/thirst traps?",
+        "choices": [
+          "I send them constantly",
+          "Only if you send one first",
+          "I like receiving them, but don't send",
+          "Never, too risky"
+        ]
+      },
+      {
+        "id": 140,
+        "text": "Where is the wildest place you want to try next?",
+        "choices": [
+          "In an elevator",
+          "On a balcony/terrace",
+          "In the ocean/pool",
+          "On a kitchen counter"
+        ]
+      },
+      {
+        "id": 141,
+        "text": "How do you feel about morning breath intimacy?",
+        "choices": [
+          "No big deal, just kiss me",
+          "Brush teeth/mint first is mandatory",
+          "Only if we don't kiss on the mouth",
+          "Absolutely not, wait till noon"
+        ]
+      },
+      {
+        "id": 142,
+        "text": "What is your stance on using lube?",
+        "choices": [
+          "Always keep it handy",
+          "Only if absolutely necessary",
+          "I prefer natural only",
+          "Fun to try flavored/warming ones"
+        ]
+      },
+      {
+        "id": 143,
+        "text": "How do you feel about blindfolding your partner?",
+        "choices": [
+          "I love having complete control",
+          "I prefer being the blindfolded one",
+          "Too anxious, I need to see everything",
+          "Fun to try occasionally"
+        ]
+      },
+      {
+        "id": 144,
+        "text": "What is your stance on bite marks?",
+        "choices": [
+          "Love leaving/getting them",
+          "Only soft biting, no marks",
+          "I hate being bitten",
+          "Only on the neck/shoulders"
+        ]
+      },
+      {
+        "id": 145,
+        "text": "How do you feel about morning wood?",
+        "choices": [
+          "Best way to wake up fr",
+          "I am too tired, let me sleep",
+          "Only if we have time to cuddle",
+          "Shower first please"
+        ]
+      },
+      {
+        "id": 146,
+        "text": "What is your preference for body hair?",
+        "choices": [
+          "100% shaved/smooth",
+          "Trimmed/Neat is perfect",
+          "Natural/Wild is hot",
+          "I don't care at all"
+        ]
+      },
+      {
+        "id": 147,
+        "text": "How do you feel about phone use in bed afterward?",
+        "choices": [
+          "Immediate turn-off, keep cuddling",
+          "Fine after a few minutes of talking",
+          "I do it too, so no big deal",
+          "Only to play a game together"
+        ]
+      },
+      {
+        "id": 148,
+        "text": "What is your view on scratching?",
+        "choices": [
+          "Leave massive marks on my back",
+          "Light scratching only",
+          "Absolutely no scratching allowed",
+          "Only if it is accidental"
+        ]
+      },
+      {
+        "id": 149,
+        "text": "How do you feel about dirty talk in a foreign accent/language?",
+        "choices": [
+          "Extremely hot",
+          "Silly/makes me laugh",
+          "Cringe, please speak normally",
+          "Only if it is French/Italian"
+        ]
+      },
+      {
+        "id": 150,
+        "text": "What is your ideal post-intimacy snack?",
+        "choices": [
+          "Cold water & absolute silence",
+          "Ordering greasy fast food",
+          "Sweet treats/chocolate/ice cream",
+          "Round two is my snack"
+        ]
       }
     ]
   },
   "couple_trivia": {
-    "emoji": "\ud83c\udfaf",
+    "emoji": "🎯",
     "name": "Couple Trivia",
     "description": "Basic facts & daily habits",
     "questions": [
@@ -1481,9 +1981,9 @@ const GAME_DATA = {
         "id": 51,
         "text": "What is my go-to drunk food?",
         "choices": [
-          "Pizza",
-          "Taco Bell / Fast Food",
-          "Instant Noodles",
+          "Pizza/Garlic Bread",
+          "Taco Bell / Fast Food / Burgers",
+          "Instant Noodles / Maggi",
           "I don't eat when drunk"
         ]
       },
@@ -1493,7 +1993,7 @@ const GAME_DATA = {
         "choices": [
           "Black coffee / Espresso",
           "Sweet Iced Latte / Frappe",
-          "Tea / Matcha",
+          "Tea / Matcha / Chai",
           "I don't drink caffeine"
         ]
       },
@@ -1511,10 +2011,10 @@ const GAME_DATA = {
         "id": 54,
         "text": "What is my favorite genre of movie?",
         "choices": [
-          "Action / Thriller",
-          "Rom-Com / Drama",
-          "Horror",
-          "Sci-Fi / Fantasy"
+          "Action / Thriller / Mystery",
+          "Rom-Com / Drama / Anime",
+          "Horror / Psychological",
+          "Sci-Fi / Fantasy / Marvel"
         ]
       },
       {
@@ -1531,19 +2031,19 @@ const GAME_DATA = {
         "id": 56,
         "text": "What is my biggest pet peeve?",
         "choices": [
-          "Loud chewing",
-          "Slow walkers",
-          "Being interrupted",
-          "Bad drivers"
+          "Loud chewing/smacking lips",
+          "Slow walkers/traffic blocking",
+          "Being interrupted/talked over",
+          "Bad hygiene/smelly breath"
         ]
       },
       {
         "id": 57,
         "text": "How do I like my eggs cooked?",
         "choices": [
-          "Scrambled",
-          "Sunny-side up",
-          "Boiled",
+          "Scrambled / Omelette",
+          "Sunny-side up / Fried",
+          "Boiled / Poached",
           "I hate eggs"
         ]
       },
@@ -1551,20 +2051,20 @@ const GAME_DATA = {
         "id": 58,
         "text": "What is my favorite season?",
         "choices": [
-          "Summer",
-          "Winter",
-          "Autumn/Fall",
-          "Spring"
+          "Summer (beach/sun)",
+          "Winter (snuggle/cold)",
+          "Autumn/Fall (aesthetic)",
+          "Spring (fresh/breezy)"
         ]
       },
       {
         "id": 59,
         "text": "Which social media app do I spend the most time on?",
         "choices": [
-          "Instagram",
-          "TikTok",
-          "Twitter/X",
-          "Reddit"
+          "Instagram (reels scroll)",
+          "TikTok / YouTube Shorts",
+          "Twitter/X (arguments)",
+          "Reddit / Discord (chats)"
         ]
       },
       {
@@ -1572,9 +2072,9 @@ const GAME_DATA = {
         "text": "What is my favorite color to wear?",
         "choices": [
           "All black everything",
-          "Bright/Neon colors",
+          "Bright/Neon/White",
           "Earth tones (Browns/Greens)",
-          "Pastels"
+          "Pastels / Soft blues"
         ]
       },
       {
@@ -1601,9 +2101,9 @@ const GAME_DATA = {
         "id": 63,
         "text": "What is my worst habit?",
         "choices": [
-          "Biting my nails",
-          "Procrastinating",
-          "Interrupting people",
+          "Biting my nails/lips",
+          "Procrastinating until last minute",
+          "Interrupting people excitedly",
           "Scrolling on my phone mid-conversation"
         ]
       },
@@ -1612,7 +2112,7 @@ const GAME_DATA = {
         "text": "If I won the lottery, what is the first thing I'd buy?",
         "choices": [
           "A massive mansion",
-          "A luxury car",
+          "A luxury sports car",
           "A first-class ticket around the world",
           "Pay off all debt immediately"
         ]
@@ -1621,17 +2121,17 @@ const GAME_DATA = {
         "id": 65,
         "text": "What is my favorite fast-food chain?",
         "choices": [
-          "McDonald's",
-          "KFC / Popeyes",
-          "Burger King",
-          "Subway / Healthy option"
+          "McDonald's / Burger King",
+          "KFC / Popeyes / Chicken",
+          "Subway / Healthy option",
+          "Local street food / Momos"
         ]
       },
       {
         "id": 66,
         "text": "How do I react to jump scares in movies?",
         "choices": [
-          "I don't flinch",
+          "I don't flinch (cold blooded)",
           "I scream out loud",
           "I cover my eyes the whole time",
           "I laugh at them"
@@ -1641,10 +2141,10 @@ const GAME_DATA = {
         "id": 67,
         "text": "What was my favorite subject in school?",
         "choices": [
-          "Math / Science",
-          "English / Literature",
-          "Art / Music",
-          "P.E. / Gym"
+          "Math / Science / Coding",
+          "English / History / Literature",
+          "Art / Music / Drama",
+          "P.E. / Gym / Sports"
         ]
       },
       {
@@ -1652,8 +2152,8 @@ const GAME_DATA = {
         "text": "What is my usual shoe choice?",
         "choices": [
           "Sneakers / Jordans",
-          "Boots",
-          "Sandals / Crocs",
+          "Boots / Leather shoes",
+          "Sandals / Crocs / Slides",
           "Formal shoes / Heels"
         ]
       },
@@ -1671,10 +2171,10 @@ const GAME_DATA = {
         "id": 70,
         "text": "What is my favorite type of music?",
         "choices": [
-          "Rap / Hip-Hop",
-          "Pop / Top 40",
-          "Rock / Metal",
-          "Indie / Alternative"
+          "Rap / Hip-Hop / Drill",
+          "Pop / Top 40 / Indie",
+          "Rock / Metal / Electronic",
+          "Classical / Lo-fi / Slowed"
         ]
       },
       {
@@ -1682,8 +2182,8 @@ const GAME_DATA = {
         "text": "Which household chore do I hate the most?",
         "choices": [
           "Doing dishes",
-          "Folding laundry",
-          "Vacuuming",
+          "Folding laundry / Ironing",
+          "Vacuuming / Dusting",
           "Cleaning the bathroom"
         ]
       },
@@ -1691,29 +2191,29 @@ const GAME_DATA = {
         "id": 72,
         "text": "What is my comfort TV show?",
         "choices": [
-          "The Office / Friends",
+          "The Office / Friends / Modern Family",
           "True Crime documentaries",
-          "Reality TV trash",
-          "Anime"
+          "Reality TV trash (Love Island)",
+          "Anime / K-Drama"
         ]
       },
       {
         "id": 73,
         "text": "How do I pack for a trip?",
         "choices": [
-          "Weeks in advance",
+          "Weeks in advance (organized lists)",
           "The night before",
           "Throwing everything in a bag 1 hour before",
-          "I overpack for every scenario"
+          "I overpack for every single scenario"
         ]
       },
       {
         "id": 74,
         "text": "What is my favorite dessert?",
         "choices": [
-          "Chocolate anything",
-          "Ice cream",
-          "Cheesecake",
+          "Chocolate cake / Brownie fudge",
+          "Ice cream / Gelato",
+          "Cheesecake / Pastry",
           "I prefer savory snacks over sweets"
         ]
       },
@@ -1721,16 +2221,166 @@ const GAME_DATA = {
         "id": 75,
         "text": "What time do I usually go to bed?",
         "choices": [
-          "Before 10 PM",
-          "Midnight",
-          "2 AM - 3 AM",
-          "When the sun comes up"
+          "Before 10 PM (early bird)",
+          "Around Midnight",
+          "2 AM - 3 AM (night owl)",
+          "When the sun comes up (insomniac)"
+        ]
+      },
+      {
+        "id": 166,
+        "text": "What is my absolute dream car?",
+        "choices": [
+          "Tesla / Electric smart car",
+          "Porsche 911 / Sports car",
+          "G-Wagon / Massive SUV",
+          "Vintage Mustang / Classic"
+        ]
+      },
+      {
+        "id": 167,
+        "text": "Am I an introvert or an extrovert?",
+        "choices": [
+          "Extrovert (social butterfly)",
+          "Introvert (homebody)",
+          "Ambivert (depends on day)",
+          "Socially anxious introvert"
+        ]
+      },
+      {
+        "id": 168,
+        "text": "What is my favorite hot beverage?",
+        "choices": [
+          "Hot chocolate",
+          "Chai latte / milk tea",
+          "Green tea / herbal tea",
+          "Cappuccino / Latte"
+        ]
+      },
+      {
+        "id": 169,
+        "text": "How do I behave when I get angry?",
+        "choices": [
+          "Silent treatment / shut down",
+          "Yell and argue passionately",
+          "Passive-aggressive comments",
+          "Cry out of frustration"
+        ]
+      },
+      {
+        "id": 170,
+        "text": "What is my go-to karaoke song?",
+        "choices": [
+          "A massive rap anthem",
+          "Emotional 2000s love ballad",
+          "Cringe pop song (Taylor Swift/Justin Bieber)",
+          "I refuse to sing karaoke"
+        ]
+      },
+      {
+        "id": 171,
+        "text": "How do I prefer to stay active?",
+        "choices": [
+          "Hitting the gym/lifting weights",
+          "Running / Outdoor sports",
+          "Yoga / Pilates / Stretching",
+          "Laying on the couch (zero active energy)"
+        ]
+      },
+      {
+        "id": 172,
+        "text": "What is my biggest hidden talent?",
+        "choices": [
+          "Cooking/baking delicious food",
+          "Doing weird voice impressions",
+          "Flexibility / double jointed",
+          "Gaming / incredibly fast reflexes"
+        ]
+      },
+      {
+        "id": 173,
+        "text": "What is my favorite type of cuisine?",
+        "choices": [
+          "Italian (Pizza/Pasta)",
+          "Asian (Sushi/Ramen/Indian)",
+          "Mexican (Tacos/Burritos)",
+          "Burgers & Fries / American"
+        ]
+      },
+      {
+        "id": 174,
+        "text": "Am I a dog person or a cat person?",
+        "choices": [
+          "Dogs all the way!",
+          "Cats all the way!",
+          "Both equally",
+          "Neither, I don't like animals"
+        ]
+      },
+      {
+        "id": 175,
+        "text": "What is my biggest academic/career goal?",
+        "choices": [
+          "Start my own successful company",
+          "Land a high-paying corporate job",
+          "Become an artist/creator",
+          "Retire early and travel"
+        ]
+      },
+      {
+        "id": 176,
+        "text": "What is my favorite smartphone brand?",
+        "choices": [
+          "Apple iPhone",
+          "Samsung Galaxy",
+          "Google Pixel",
+          "OnePlus / Xiaomi"
+        ]
+      },
+      {
+        "id": 177,
+        "text": "How do I handle scary movies?",
+        "choices": [
+          "Love them, don't get scared at all",
+          "Scream and jump at every scene",
+          "Cover my eyes or hide behind pillows",
+          "I refuse to watch them"
+        ]
+      },
+      {
+        "id": 178,
+        "text": "What is my signature scent/perfume vibe?",
+        "choices": [
+          "Sweet & vanilla",
+          "Fresh & woody/musk",
+          "Floral & fruity",
+          "I don't wear perfume/cologne"
+        ]
+      },
+      {
+        "id": 179,
+        "text": "How do I react to bad customer service?",
+        "choices": [
+          "Politely accept it and move on",
+          "Leave a terrible 1-star review",
+          "Ask for the manager (Karen mode)",
+          "Just tip less and never return"
+        ]
+      },
+      {
+        "id": 180,
+        "text": "What is my dream travel destination?",
+        "choices": [
+          "Japan (Tokyo/Kyoto)",
+          "Europe (Paris/Italy/Greece)",
+          "Maldives/Bali (tropical beach)",
+          "Iceland (Northern Lights)"
         ]
       }
     ]
   },
   "truth_or_lie": {
-    "emoji": "\ud83e\udd25",
+    "emoji": "🤥",
     "name": "Truth or Lie",
     "description": "Wild confessions & secret facts",
     "questions": [
@@ -1982,6 +2632,156 @@ const GAME_DATA = {
           "I regret my major/career path",
           "I am still in love with my ex",
           "I have a secret stash of money"
+        ]
+      },
+      {
+        "id": 201,
+        "text": "What is a massive lie I told to get out of a date?",
+        "choices": [
+          "\"My grandmother passed away\"",
+          "\"I have a sudden food poisoning\"",
+          "\"I have to work overnight/emergency\"",
+          "\"I completely forgot\""
+        ]
+      },
+      {
+        "id": 202,
+        "text": "Which of these have I actually done on a dating app?",
+        "choices": [
+          "Catfished someone using old/edited pics",
+          "Met a total stranger in 20 minutes",
+          "Spammed someone with angry messages",
+          "Ignored 50+ matches completely"
+        ]
+      },
+      {
+        "id": 203,
+        "text": "What is my most toxic secret social media habit?",
+        "choices": [
+          "Stalking my ex's new partner's profile",
+          "Creating a fake account to spy on someone",
+          "Unfollowing people who don't follow back",
+          "Checking who viewed my stories every 5 mins"
+        ]
+      },
+      {
+        "id": 204,
+        "text": "Which of these have I done in a relationship?",
+        "choices": [
+          "Lied about where I was going",
+          "Flirted with a waiter/waitress for free food",
+          "Stolen my partner's hoodies permanently",
+          "Read their journals/diaries secretly"
+        ]
+      },
+      {
+        "id": 205,
+        "text": "What is a wild thing I did to get revenge?",
+        "choices": [
+          "Keyed a car or damaged property",
+          "Spread a highly embarrassing rumor",
+          "Hooked up with their best friend",
+          "Ignored them completely until they cried"
+        ]
+      },
+      {
+        "id": 206,
+        "text": "What is the absolute longest I've gone without showering?",
+        "choices": [
+          "2 days",
+          "4 days",
+          "A full week",
+          "Over a week (camping/lazy block)"
+        ]
+      },
+      {
+        "id": 207,
+        "text": "Which of these have I actually stolen?",
+        "choices": [
+          "Hotel towels/slippers",
+          "Shot glasses from a bar",
+          "Makeup or clothes from a store",
+          "Money from a family member's wallet"
+        ]
+      },
+      {
+        "id": 208,
+        "text": "What is a highly illegal thing I got away with?",
+        "choices": [
+          "Shoplifting expensive items",
+          "Buying/using fake IDs",
+          "Doing drugs at a music festival",
+          "Underage driving without a license"
+        ]
+      },
+      {
+        "id": 209,
+        "text": "What is the cringiest thing I did as a teenager?",
+        "choices": [
+          "Wrote an extremely dramatic blog/diary",
+          "Had a highly embarrassing haircut/fashion",
+          "Confessed my love in a massive public speech",
+          "Made a super cringe musical.ly/TikTok"
+        ]
+      },
+      {
+        "id": 210,
+        "text": "Which of these secrets would ruin my reputation?",
+        "choices": [
+          "I once hooked up with a teacher/boss",
+          "I have a secret foot/hand kink",
+          "I failed a highly basic exam 3 times",
+          "I still sleep with a stuffed animal"
+        ]
+      },
+      {
+        "id": 211,
+        "text": "Which of these have I done to my best friend?",
+        "choices": [
+          "Secretly disliked their new outfit/style",
+          "Talked trash about them behind their back",
+          "Had a huge crush on their sibling/partner",
+          "Forgotten their birthday completely"
+        ]
+      },
+      {
+        "id": 212,
+        "text": "What is the most expensive thing I've broken?",
+        "choices": [
+          "My own smartphone screen (multiple times)",
+          "A expensive TV or laptop",
+          "A car bumper/side mirror",
+          "A luxury watch/jewelry"
+        ]
+      },
+      {
+        "id": 213,
+        "text": "What is my actual opinion of your friends?",
+        "choices": [
+          "I love them, they are amazing!",
+          "They are fine, but in small doses",
+          "One of them is highly annoying",
+          "I secretly dislike most of them"
+        ]
+      },
+      {
+        "id": 214,
+        "text": "Which of these habits do I keep completely secret?",
+        "choices": [
+          "Picking my nose when no one is watching",
+          "Talking to myself in full conversations",
+          "Stalking completely random people on LinkedIn",
+          "Watching dramatic reality TV for hours"
+        ]
+      },
+      {
+        "id": 215,
+        "text": "What is a highly toxic rule I believe in?",
+        "choices": [
+          "\"If they wanted to, they would\"",
+          "\"An eye for an eye in relationships\"",
+          "\"Double texting makes you look desperate\"",
+          "\"Never confess your feelings first\""
         ]
       }
     ]
