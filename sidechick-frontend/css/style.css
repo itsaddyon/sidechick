@@ -354,7 +354,7 @@ body.theme-dark #app:not(.ai-off) .messages{background:linear-gradient(rgba(10,1
   z-index: 10 !important;
   margin: 0 !important;
   pointer-events: none !important;
-  display: grid !important;
+  display: grid;
   place-items: center !important;
   padding: 0 !important;
 }
@@ -757,7 +757,7 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   .messages{
     position: absolute !important;
     top: calc(54px + env(safe-area-inset-top)) !important;
-    bottom: calc(68px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
     left: 0 !important;
     right: 0 !important;
     overflow-y: auto !important;
@@ -780,7 +780,7 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   .mobile-detective-bar{
     display: none !important;
     position: absolute !important;
-    bottom: calc(68px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
     left: 0 !important;
     right: 0 !important;
     height: 54px !important;
@@ -804,7 +804,7 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     display: flex !important;
   }
   .app-screen[data-detective-mode="on"] .messages {
-    bottom: calc(122px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(142px + env(safe-area-inset-bottom)) !important;
   }
 
   /* AI panel: SIDEBAR DRAWER on mobile */
@@ -874,7 +874,7 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     -webkit-backdrop-filter: blur(16px) !important;
     border-top: 1px solid var(--border) !important;
     padding: 10px 12px !important;
-    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom)) !important; /* Raised to protect against browser border occlusion */
     margin: 0 !important;
   }
   .composer-row{display:flex !important;flex-direction:row !important;align-items:flex-end !important;gap:10px !important;flex-wrap:nowrap !important}

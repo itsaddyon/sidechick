@@ -32,6 +32,14 @@ if not secret_key:
     )
 app.config['SECRET_KEY'] = secret_key
 
+@app.after_request
+def add_header(r):
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
+
+
 cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '*').strip()
 if cors_origins != '*':
     cors_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
