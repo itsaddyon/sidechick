@@ -2925,6 +2925,8 @@ async function submitGameName() {
 }
 
 function showGameScreen(gameType, gameCode, username) {
+  window.scrollTo(0, 0);
+  document.body.scrollTop = 0;
   console.log('=== showGameScreen START ===');
   console.log('gameType:', gameType, 'gameCode:', gameCode, 'username:', username);
   
