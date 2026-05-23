@@ -10,7 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml"/>
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.2"/>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.5"/>
 </head>
 <body class="intro-active">
 <div id="intro-loader" class="intro-loader" aria-label="Sidechick loading intro">
@@ -26,9 +27,9 @@
     <div class="intro-logo" aria-hidden="true">
       <span class="intro-logo-mark">🛡️</span>
     </div>
-    <div class="intro-kicker">Private Rooms</div>
+    <div class="intro-kicker">Vibe Check Zone</div>
     <h1>Sidechick</h1>
-    <p>Real-time chat companion with trust-first room safety. Not even the creator or admin can open your room chat.</p>
+    <p>Your private chat space. No cap. We literally can't see your convo - not even the dev who built us. Your vibes, your rules. 💯</p>
     <div class="intro-credit-stack">
       <span>Made with trust</span>
       <strong>Team Grey Hats</strong>
@@ -41,34 +42,114 @@
   </div>
 </div>
 
-<div id="lobby" class="screen">
+<div id="mode-select" class="screen" style="display: none;">
+  <div class="mode-select-wrapper">
+    <div class="mode-select-header">
+      <h1>Where to?</h1>
+      <p>Choose your vibe for the session.</p>
+    </div>
+    <div class="mode-cards">
+      <div class="mode-card chat-card" onclick="selectMode('chat')">
+        <div class="mode-card-icon">💬</div>
+        <h2>Private Chat</h2>
+        <p>A secure, encrypted space for deep conversations.</p>
+      </div>
+      <div class="mode-card game-card" onclick="selectMode('game')">
+        <div class="mode-card-icon">🎮</div>
+        <h2>Couple Games</h2>
+        <p>Discover more about each other with interactive quizzes.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lobby" class="screen" style="display: none;">
   <div class="lobby-topbar">
+    <button class="ghost-btn icon-btn topbar-btn" onclick="backToModeSelect()" aria-label="Back to Mode Select" style="margin-right: 15px;">←</button>
     <div class="lobby-brand">Sidechick</div>
     <button class="ghost-btn icon-btn theme-toggle topbar-btn" data-theme-toggle type="button" aria-label="Toggle theme">Mode</button>
   </div>
   <div class="hero-shell">
     <section class="hero-copy">
-      <div class="eyebrow">Private Rooms</div>
-      <h1>Chat in private rooms with people you choose.</h1>
-      <p class="hero-text">
-        Share a room code with friends. Only people with the code can join, and no creator/admin view is built to read your chat.
+      <div class="eyebrow" id="lobby-eyebrow">Games & Chat</div>
+      <h1 id="lobby-title">Connect, Challenge & Chat</h1>
+      <p class="hero-text" id="lobby-desc">
+        Play fun games with friends, find out how well you know each other, then chat about it.
       </p>
-      <details class="privacy-panel">
-        <summary>Privacy & Safety</summary>
-        <div class="privacy-panel-body">
-          <div><strong>Private by code</strong><span>Only people with the shared room code can join.</span></div>
-          <div><strong>No admin inbox</strong><span>There is no creator dashboard for reading room chats.</span></div>
-          <div><strong>Session scoped</strong><span>Messages are kept for the active room session and shown to joined users.</span></div>
-          <div><strong>Room insights</strong><span>Safety insights stay attached to the live room experience.</span></div>
-        </div>
-      </details>
     </section>
 
-    <section class="lobby-panel">
+    <section class="game-selection-panel">
       <div class="panel-heading">
         <div>
-          <div class="panel-kicker">Start a room</div>
-          <h2>Start chat</h2>
+          <div class="panel-kicker">Play together</div>
+          <h2>Pick a game</h2>
+        </div>
+      </div>
+
+      <!-- Name input FIRST -->
+      <div class="simple-entry" style="margin-bottom: 24px;">
+        <label class="field-label" for="game-username-input">Enter Your Name</label>
+        <input class="lobby-input" id="game-username-input" placeholder="What should they call you?" maxlength="20" autocomplete="off" autofocus inputmode="text"/>
+      </div>
+
+      <div class="games-grid">
+        <!-- Compatibility Quiz Game -->
+        <div class="game-card" onclick="createGame('compatibility_quiz')">
+          <div class="game-icon">🎮</div>
+          <h3>Compatibility Quiz</h3>
+          <p>How well do you know each other?</p>
+          <div class="game-card-footer">Answer the same Qs about yourself & your partner</div>
+        </div>
+
+        <!-- Spicy or Sweet Game -->
+        <div class="game-card" onclick="createGame('spicy_or_sweet')">
+          <div class="game-icon">🌶️</div>
+          <h3>Spicy or Sweet</h3>
+          <p>Find out who's more adventurous</p>
+          <div class="game-card-footer">Rate each other on the spice scale</div>
+        </div>
+
+        <!-- Couple Trivia Game -->
+        <div class="game-card" onclick="createGame('couple_trivia')">
+          <div class="game-icon">🎯</div>
+          <h3>Couple Trivia</h3>
+          <p>Test your knowledge</p>
+          <div class="game-card-footer">Trivia questions about your relationship</div>
+        </div>
+
+        <!-- Truth or Lie Game -->
+        <div class="game-card" onclick="createGame('truth_or_lie')">
+          <div class="game-icon">🤥</div>
+          <h3>Truth or Lie</h3>
+          <p>Can you guess what's real?</p>
+          <div class="game-card-footer">Tell truths & lies, let them guess</div>
+        </div>
+      </div>
+
+      <!-- OR use invite code section -->
+      <div class="divider">
+        <span>or join an existing game</span>
+      </div>
+
+      <div class="simple-entry">        
+        <label class="field-label" for="game-code-input">Game Code</label>
+        <input class="lobby-input" id="game-code-input" placeholder="Enter the code your friend shared" maxlength="20" autocomplete="off" inputmode="text"/>
+        
+        <button class="primary-btn wide-btn" id="join-game-btn" onclick="joinGameWithCode()">Join Game</button>
+      </div>
+
+      <div class="privacy-note">
+        <span class="privacy-icon" aria-hidden="true">🔒</span>
+        <p>All games are private. Only people with the code can join.</p>
+      </div>
+    </section>
+
+    <!-- Chat Option Section -->
+    <section class="chat-option-panel">
+      <div class="panel-heading">
+        <div>
+          <div class="panel-kicker">Or just chat</div>
+          <h2>Start a chat room</h2>
         </div>
         <div class="panel-actions">
           <div class="status-pill">Realtime</div>
@@ -76,26 +157,26 @@
       </div>
 
       <div class="simple-entry">
-        <label class="field-label" for="username-input">Your Name</label>
-        <input class="lobby-input" id="username-input" placeholder="Enter your name" maxlength="20" autofocus/>
+        <label class="field-label" for="chat-username-input">Your Name</label>
+        <input class="lobby-input" id="chat-username-input" placeholder="Enter your name" maxlength="20" autocomplete="off" inputmode="text"/>
         <div class="field-label">Room Type</div>
         <div class="room-mode-tabs" role="group" aria-label="Choose room type">
-          <button class="room-mode-btn active" id="manual-room-btn" type="button" onclick="setRoomMode('manual')">Manual code</button>
-          <button class="room-mode-btn" id="open-room-btn" type="button" onclick="setRoomMode('open')">Open match</button>
+          <button class="room-mode-btn active" id="manual-room-btn" type="button" onclick="setRoomMode('manual')" aria-pressed="true">Manual code</button>
+          <button class="room-mode-btn" id="open-room-btn" type="button" onclick="setRoomMode('open')" aria-pressed="false">Open match</button>
         </div>
         <label class="field-label" for="room-input">Room Code</label>
         <div class="room-code-row">
-          <input class="lobby-input" id="room-input" placeholder="Shared room or case ID" maxlength="20"/>
+          <input class="lobby-input" id="room-input" placeholder="Shared room or case ID" maxlength="20" autocomplete="off" inputmode="text"/>
         </div>
         <p class="field-note open-room-note" id="open-room-note">Open match waits for another available person and auto-connects both of you.</p>
-        <div class="match-status" id="match-status" aria-live="polite"></div>
+        <div class="match-status" id="match-status" aria-live="polite" aria-atomic="true"></div>
         <div class="room-action-row">
           <button class="primary-btn wide-btn" id="start-chat-btn" onclick="joinChat()">Start Chat</button>
           <button class="ghost-btn cancel-match-btn" id="cancel-match-btn" type="button" onclick="cancelOpenMatch()">Cancel</button>
         </div>
         <div class="privacy-note">
           <span class="privacy-icon" aria-hidden="true">🔒</span>
-          <p>No admin inbox. No creator dashboard. Your room messages stay visible only to people who join with the room code.</p>
+          <p>No admin inbox. Your room messages stay visible only to people who join with the room code.</p>
         </div>
       </div>
     </section>
@@ -127,10 +208,17 @@
       <span class="topbar-title">Chat</span>
       <span class="private-chip" title="No admin or creator view is built to read this room">🔒 Private room</span>
     </div>
-    <button class="ghost-btn mobile-menu-btn" id="mobile-menu-btn" type="button" onclick="toggleTopbarMenu()" aria-label="Open room tools" aria-expanded="false">
-      <span class="btn-icon">☰</span>
-      <span class="btn-label">Tools</span>
-    </button>
+    <button class="ghost-btn mobile-menu-btn" id="mobile-menu-btn" type="button" onclick="toggleTopbarMenu()" aria-label="Open room tools" aria-expanded="false">☰ Menu</button>
+
+    <!-- Mobile dropdown — grid row 2 of .app-topbar, only shown at ≤720px -->
+    <div id="topbar-dropdown" class="topbar-dropdown">
+      <button class="dd-btn" id="dd-vibe-btn" type="button" onclick="toggleSidekick()">⌕ Vibe Check: OFF</button>
+      <button class="dd-btn" id="dd-theme-btn" type="button" data-theme-toggle onclick="toggleTheme();updateThemeToggles()">☾ Dark Mode</button>
+      <div class="dd-badge">📌 Room: <span id="dd-room-badge">#session</span></div>
+      <button class="dd-btn" type="button" onclick="copyRoomCode()">⧉ Copy Room Code</button>
+      <button class="dd-btn danger" type="button" onclick="toggleTopbarMenu(false);leaveChat()">↩ Leave Room</button>
+    </div>
+
     <div class="topbar-actions">
       <button class="ghost-btn topbar-btn" id="toggle-ai-btn" onclick="toggleSidekick()" aria-label="Toggle detective mode" title="Detective mode">
         <span class="btn-icon">⌕</span>
@@ -170,15 +258,24 @@
     <div id="messages" class="messages"></div>
     <div id="messages-empty" class="messages-empty">
       <div class="empty-card">
-        <div class="empty-kicker">Say hi</div>
+        <div class="empty-kicker">Let's vibe</div>
         <h3>No messages yet.</h3>
-        <p>Start gently or set the tone for the room.</p>
+        <p>Start the convo or set the energy fr fr.</p>
         <div class="empty-prompts">
-          <button type="button" onclick="usePrompt('Hey, I am here. How are you feeling?')">Say hi</button>
-          <button type="button" onclick="usePrompt('Can we keep this calm and clear?')">Set tone</button>
-          <button type="button" onclick="usePrompt('What should we talk about first?')">Ask first</button>
+          <button type="button" onclick="usePrompt('Yo, how u feeling?')">Yo wassup</button>
+          <button type="button" onclick="usePrompt('Let\'s keep it real w each other ok?')">Keep it real</button>
+          <button type="button" onclick="usePrompt('What we talking about first bestie?')">Ask first</button>
         </div>
       </div>
+    </div>
+
+    <!-- Mobile Vibe Check bar: tap to open the sidebar drawer -->
+    <div class="mobile-detective-bar" id="mobile-detective-bar">
+      <div class="mob-det-info">
+        <strong>⌕ Vibe Check</strong>
+        <span>AI reads what's actually happening rn</span>
+      </div>
+      <button class="ghost-btn toggle-det-btn" id="mob-det-toggle" type="button" onclick="toggleAIDrawer()">⌕ Open Vibe Check</button>
     </div>
 
     <footer class="composer">
@@ -186,8 +283,62 @@
       <div id="sugg-row" class="sugg-row" style="display: none;"></div>
       <div class="composer-reply-tip" id="reply-tip" style="display: none;"></div>
       <div class="composer-draft" id="draft-reply" style="display: none;" onclick="useDraft()" title="Click to use this reply"></div>
+      
+      <!-- Photo preview/caption section -->
+      <div id="photo-upload-preview" class="photo-upload-preview" style="display: none;">
+        <img id="preview-img" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-bottom: 8px;">
+        <input type="text" id="photo-caption" placeholder="Add a caption... (optional)" class="photo-caption-input" maxlength="280">
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button onclick="sendPhotoMessage()" class="btn-primary" style="flex: 1;">Share Photo 🎉</button>
+          <button onclick="cancelPhotoUpload()" class="btn-secondary" style="flex: 1;">Cancel</button>
+        </div>
+      </div>
+      
+      <div id="upload-status" class="upload-status" style="display: none; color: #4ce8ff; font-size: 0.85rem; margin: 8px 0; text-align: center;"></div>
+      
+      <!-- Quick Sticker/GIF Replies -->
+      <div id="quick-replies" class="quick-replies" style="display: none;">
+        <button onclick="quickReply('Lol ok')" class="quick-reply-btn">Lol ok</button>
+        <button onclick="quickReply('No cap')" class="quick-reply-btn">No cap</button>
+        <button onclick="quickReply('fr fr')" class="quick-reply-btn">fr fr</button>
+        <button onclick="quickReply('I\'m crying 😭')" class="quick-reply-btn">I'm crying</button>
+        <button onclick="quickReply('Bestie???')" class="quick-reply-btn">Bestie???</button>
+        <button onclick="quickReply('Yesss')" class="quick-reply-btn">Yesss</button>
+      </div>
+      
+      <!-- Game Mode & Features -->
+      <div id="features-bar" class="features-bar" style="display: none;">
+        <button onclick="startGame('dark_fantasy')" class="feature-btn" title="Play compatibility game">🎮 Know You</button>
+        <button onclick="startConversationPrompt()" class="feature-btn" title="Get conversation starters">🎲 Prompt</button>
+        <button onclick="triggerVibeReport()" class="feature-btn" title="Screenshot your vibe">📸 Vibe Report</button>
+        <button onclick="showGameHistory()" class="feature-btn" title="View compatibility scores">📊 Score</button>
+      </div>
+      
+      <!-- Vibe Meter Display -->
+      <div id="vibe-meter" class="vibe-meter" style="display: none;">
+        <div class="vibe-energy">
+          <span id="vibe-emoji">🌟</span>
+          <span id="vibe-text">Great vibes!</span>
+          <span id="vibe-trend">📈</span>
+        </div>
+        <div id="vibe-alerts" class="vibe-alerts"></div>
+      </div>
+      
+      <!-- Red Flags / Green Flags Display -->
+      <div id="flags-display" class="flags-display" style="display: none;">
+        <div id="green-flags" class="flags-section" style="display: none;"></div>
+        <div id="red-flags" class="flags-section" style="display: none;"></div>
+      </div>
+      
       <div class="composer-row">
-        <textarea id="msg-input" placeholder="Type a message..." rows="1" oninput="onTyping()" onkeydown="handleKey(event)"></textarea>
+        <textarea id="msg-input" placeholder="Type a message... or share a vibe 💬" rows="1" oninput="onTyping()" onkeydown="handleKey(event)"></textarea>
+        
+        <!-- Photo upload button -->
+        <button id="photo-upload-btn" class="compose-icon-btn" title="Share a photo" aria-label="Upload photo">
+          <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)">
+          <span style="font-size: 1.2rem; cursor: pointer; display: inline-block;">📸</span>
+        </button>
+        
         <button id="send-btn" class="send-fab" onclick="sendMessage()" aria-label="Send message">
           <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 12h12m0 0l-4-4m4 4l-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -202,53 +353,62 @@
   <aside id="ai-panel" class="workspace-column intelligence-column">
     <header class="intelligence-header">
       <div class="header-main-info">
-        <button class="drawer-close-btn" onclick="setSidekickEnabled(false)" aria-label="Close insights">
+        <button class="drawer-close-btn" onclick="closeAIDrawer()" aria-label="Close panel">
           <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 6L6 18M6 6l12 12"></path></svg>
         </button>
         <div>
-          <div class="eyebrow">Insights</div>
-          <h2>Vibe check</h2>
+          <div class="eyebrow">Real talk</div>
+          <h2>What's going on 👀</h2>
         </div>
       </div>
-      <div class="panel-status" id="ai-status">Insights: ready</div>
+      <div class="panel-status" id="ai-status">Ready to read the room 👀</div>
     </header>
 
     <div id="intel-overview" class="intel-pane is-active">
+      <!-- Message when detective mode is OFF -->
+      <section class="intel-card detector-off-card">
+        <div class="empty-kicker">Vibe Check Off</div>
+        <h3>Turn it on fr</h3>
+        <p>Let's see what's actually happening in this chat (mood, signals, the full tea ☕)</p>
+        <button class="primary-btn" onclick="setSidekickEnabled(true)" style="width:100%;margin-top:16px">🔥 Read The Room</button>
+      </section>
+      
+      <!-- Insights shown when detective mode is ON -->
       <section class="intel-card hero-card">
-        <div class="section-label">Vibe right now</div>
+        <div class="section-label">The vibe rn 🦶</div>
         <div class="stage-row">
           <div class="vibe-badge level-0" id="vibe-badge">
             <span class="vibe-icon" id="vibe-icon">🙂</span>
             <span id="vibe-label">Calm</span>
           </div>
           <div class="risk-projection">
-            <span class="risk-caption">Next vibe</span>
+            <span class="risk-caption">Where this going 👀</span>
             <strong id="prediction-text">Waiting for messages.</strong>
           </div>
         </div>
         <p class="vibe-detail" id="vibe-detail"></p>
         <div class="hero-callout" id="hero-callout">
-          Your chat stays in this room. No admin or creator view is built to read it.
+          Just you two here - completely private. We promise ✓
         </div>
       </section>
 
       <section class="intel-card">
-        <div class="section-label">Signals</div>
+        <div class="section-label">The tea ☕</div>
         <div class="stats-grid">
           <div class="stat-box">
-            <span>Vibe shift</span>
+            <span>Mood flip</span>
             <strong id="drift-score">--</strong>
           </div>
           <div class="stat-box">
-            <span>Heat level</span>
+            <span>How spicy</span>
             <strong id="drift-risk">--</strong>
           </div>
           <div class="stat-box">
-            <span>Next vibe</span>
+            <span>What's next</span>
             <strong id="forecast-score">--</strong>
           </div>
           <div class="stat-box">
-            <span>Cooldown</span>
+            <span>Chill zone</span>
             <strong id="recovery-score">--</strong>
           </div>
         </div>
@@ -258,27 +418,27 @@
       </section>
 
       <section class="intel-card">
-        <div class="section-label">What's happening</div>
-        <div class="insight-bubble cyan" id="primary-driver">No dominant signal yet.</div>
-        <div class="section-label secondary-label">Signals we noticed</div>
-        <div class="insight-bubble soft" id="drift-triggers">No signals yet.</div>
+        <div class="section-label">Main vibe 👀</div>
+        <div class="insight-bubble cyan" id="primary-driver">No signals yet - let it cook 🍳</div>
+        <div class="section-label secondary-label">Ngl we picked up on...</div>
+        <div class="insight-bubble soft" id="drift-triggers">Waiting for something to happen...</div>
       </section>
 
       <section class="intel-card">
-        <div class="section-label">Helpful tips</div>
-        <div class="insight-bubble amber" id="drift-tips">Tips will appear here.</div>
-        <div class="insight-bubble green" id="intervention-note">Tips update as the chat moves.</div>
+        <div class="section-label">Pro moves 💡</div>
+        <div class="insight-bubble amber" id="drift-tips">Suggestions coming...</div>
+        <div class="insight-bubble green" id="intervention-note">Updates as things change</div>
       </section>
 
       <section class="intel-card">
-        <div class="section-label">How it feels</div>
-        <div class="insight-bubble cyan" id="their-thinking">Story so far shows up here.</div>
-        <div class="insight-bubble yellow" id="their-mood">Mood shows up here.</div>
-        <div class="insight-bubble pink" id="their-expectation">What they want shows up here.</div>
+        <div class="section-label">What they're probably thinking 🤔</div>
+        <div class="insight-bubble cyan" id="their-thinking">Their story rn...</div>
+        <div class="insight-bubble yellow" id="their-mood">Their energy right now...</div>
+        <div class="insight-bubble pink" id="their-expectation">What they lowkey want...</div>
       </section>
 
       <section class="intel-card">
-        <div class="section-label">AI Playbook</div>
+        <div class="section-label">What u should do 💭</div>
         <div class="ai-summary-controls">
           <div class="summary-setting-row">
             <label for="tone-select">Tone</label>
@@ -296,13 +456,13 @@
             <span>msgs</span>
           </div>
         </div>
-        <button id="ai-summary-btn" class="ghost-btn wide-btn" onclick="requestAISummary()" disabled>Get Playbook</button>
-        <div id="ai-summary-text" class="insight-bubble soft" style="margin-top:8px;">Insights need OPENROUTER_API_KEY.</div>
+        <button id="ai-summary-btn" class="ghost-btn wide-btn" onclick="requestAISummary()" disabled>Get the move 🏄</button>
+        <div id="ai-summary-text" class="insight-bubble soft" style="margin-top:8px;">Need API key to unlock this fr</div>
       </section>
 
       <section class="intel-card">
-        <div class="section-label">Fact Check</div>
-        <div class="insight-bubble soft" id="fact-check">Fact-check results appear here.</div>
+        <div class="section-label">Real check ✓</div>
+        <div class="insight-bubble soft" id="fact-check">Verification coming...</div>
       </section>
     </div>
   </aside>
@@ -310,16 +470,115 @@
 
   <div id="threat-stop-overlay" class="threat-stop-overlay" style="display:none;">
     <div class="threat-stop-card">
-      <div class="threat-stop-kicker">Safety pause</div>
-      <h3>This chat feels unsafe.</h3>
-      <p id="threat-stop-text">You cannot continue. Exit the room and return to the home page.</p>
-      <button class="primary-btn wide-btn" onclick="exitThreatSession()">Exit to Home</button>
+      <div class="threat-stop-kicker">Hold up ⚠️</div>
+      <h3>This vibe is toxic fr</h3>
+      <p id="threat-stop-text">Yeah we can't keep going. Exit and come back when it's chill.</p>
+      <button class="primary-btn wide-btn" onclick="exitThreatSession()">Leave & Go Home</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen game-screen">
+  <div class="game-topbar">
+    <button class="ghost-btn topbar-btn" onclick="leaveGame()" aria-label="Leave game">
+      <span class="btn-icon">←</span>
+      <span class="btn-label">Back</span>
+    </button>
+    <div class="game-room-info" id="game-room-info">
+      <span id="game-type-display">Game</span> • <span id="game-code-display">#CODE</span>
+    </div>
+    <button class="ghost-btn topbar-btn" id="game-copy-btn" onclick="copyGameCode()" aria-label="Copy game code">
+      <span class="btn-icon">⧉</span>
+      <span class="btn-label">Copy</span>
+    </button>
+  </div>
+
+  <div class="game-shell">
+    <!-- Game Lobby (waiting for partner) -->
+    <div id="game-lobby" class="game-section" style="display: flex;">
+      <div class="game-lobby-content">
+        <div class="game-emoji" id="game-emoji">🎮</div>
+        <h1 id="game-title">Compatibility Quiz</h1>
+        <p id="game-description">How well do you know each other?</p>
+        
+        <div class="game-lobby-code">
+          <p>Share this code with your friend:</p>
+          <div class="code-display" id="code-display">
+            <code id="game-code-large">ABCD1234</code>
+            <button onclick="copyGameCode()" class="copy-icon-btn" title="Copy code">📋</button>
+          </div>
+        </div>
+
+        <div class="game-status-box" id="game-status-box">
+          <p id="game-status-text">Waiting for your friend to join...</p>
+          <div class="spinner"></div>
+        </div>
+
+        <div id="game-players-in-lobby" class="game-players"></div>
+
+        <button class="ghost-btn" onclick="leaveGame()">Cancel & Go Back</button>
+      </div>
+    </div>
+
+    <!-- Game In Progress -->
+    <div id="game-play" class="game-section" style="display: none;">
+      <div class="game-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div class="game-progress-wrapper" style="width: 100%; margin-bottom: 30px; text-align: center;">
+          <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">
+            Question <span id="current-q-num">1</span> of <span id="total-q-num">5</span>
+          </div>
+          <div style="width: 100%; background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; position: relative;">
+            <div id="game-progress-bar" style="height: 100%; width: 20%; background: #4ce8ff; box-shadow: 0 0 10px #4ce8ff; transition: width 0.4s ease-out;"></div>
+          </div>
+        </div>
+        
+        <div class="question-container" style="width: 100%; text-align: center;">
+           <h2 id="question-text" class="animate-in" style="font-size: 1.5rem; margin-bottom: 30px; min-height: 60px;"></h2>
+           
+           <div id="choices-grid" class="choices-grid">
+               <!-- Cards go here dynamically -->
+           </div>
+        </div>
+
+        <div id="waiting-partner" class="game-status-box" style="display: none; margin-top: 30px;">
+          <p>Waiting for partner to answer...</p>
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Results -->
+    <div id="game-results" class="game-section" style="display: none;">
+      <div class="bg-heart-wrapper">
+        <svg class="bg-heart-svg" viewBox="0 0 32 29.6">
+          <path d="M23.6,0c-3.4,0-6.3,2.7-7.6,5.6C14.7,2.7,11.8,0,8.4,0C3.8,0,0,3.8,0,8.4c0,9.4,9.5,11.9,16,21.2
+            c6.1-9.3,16-12.1,16-21.2C32,3.8,28.2,0,23.6,0z"/>
+        </svg>
+      </div>
+      <div class="game-results-content">
+        <div class="results-header">
+          <h1 id="results-title">Game Over! 🎉</h1>
+          <p id="results-subtitle">Here's how you did</p>
+        </div>
+
+        <div id="results-scorecard" class="scorecard"></div>
+        
+        <div id="results-breakdown" class="results-breakdown">
+          <!-- Breakdown injected here -->
+        </div>
+
+        <div class="results-actions">
+          <button class="primary-btn" onclick="playAgain()">🔄 Play Again</button>
+          <button class="secondary-btn" onclick="startChatAfterGame()">💬 Chat About It</button>
+          <button class="ghost-btn" onclick="leaveGame()">← Back to Home</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-</div>
-
-<script src="{{ url_for('static', filename='js/app.js') }}?v=1.2"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=3.5"></script>
 </body>
 </html>
