@@ -1497,6 +1497,22 @@ def serve_photo(filename):
 def create_game():
     """Create a new game session with invite code"""
     try:
+        # --- LAZY GARBAGE COLLECTION ---
+        # Prevent memory leaks by deleting games older than 2 hours
+        now = datetime.now()
+        expired_codes = []
+        for code, session in game_sessions.items():
+            if 'created_at' in session:
+                try:
+                    created_time = datetime.fromisoformat(session['created_at'])
+                    if (now - created_time).total_seconds() > 7200: # 2 hours
+                        expired_codes.append(code)
+                except ValueError:
+                    pass
+        for code in expired_codes:
+            del game_sessions[code]
+        # -------------------------------
+        
         data = request.json
         game_type = data.get('game_type', 'compatibility_quiz')
         username = data.get('username', 'Player')
