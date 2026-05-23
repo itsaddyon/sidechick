@@ -648,7 +648,7 @@ function uploadAndSharePhoto(file) {
   const uploadStatus = document.getElementById('upload-status');
   if(uploadStatus) uploadStatus.textContent = 'Uploading...';
   
-  fetch('/upload', {
+  fetch(BACKEND_URL + '/upload', {
     method: 'POST',
     body: formData
   })
@@ -1927,7 +1927,7 @@ async function createGame(gameType) {
   }
   
   try {
-    const response = await fetch('/api/game/create', {
+    const response = await fetch(BACKEND_URL + '/api/game/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ game_type: gameType, username })
@@ -1970,7 +1970,7 @@ async function joinGameWithCode() {
   }
   
   try {
-    const response = await fetch(`/api/game/${gameCode}/join`, {
+    const response = await fetch(BACKEND_URL + `/api/game/${gameCode}/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })
