@@ -345,18 +345,21 @@ body.theme-dark .workspace-column{background:var(--panel)}
 #app:not(.ai-off) .messages::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent);opacity:.15;z-index:0;pointer-events:none;animation:scanline 4s linear infinite}
 body.theme-dark #app:not(.ai-off) .messages{background:linear-gradient(rgba(10,16,28,.8),rgba(2,6,23,.95)),repeating-linear-gradient(0deg,rgba(76,232,255,.03) 0px,rgba(76,232,255,.03) 1px,transparent 1px,transparent 2px);background-size:100% 100%,100% 4px}
 .messages-empty {
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -55%) !important;
-  width: calc(100% - 32px) !important;
-  max-width: 520px !important;
-  z-index: 10 !important;
-  margin: 0 !important;
-  pointer-events: none !important;
+  /* CRITICAL: Never use !important on display — JS uses .style.display to hide/show this.
+     If display has !important, JS is silently ignored and the card stays stuck forever. */
   display: grid;
-  place-items: center !important;
-  padding: 0 !important;
+  place-items: center;
+  /* Desktop: centered overlay inside the messages area */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  width: calc(100% - 32px);
+  max-width: 520px;
+  z-index: 10;
+  margin: 0;
+  pointer-events: none;
+  padding: 0;
 }
 .empty-card{width:min(520px,100%);padding:26px 28px;border-radius:24px;border:1px dashed rgba(37,87,214,.2);background:rgba(255,255,255,.72);text-align:center;box-shadow:0 18px 40px rgba(61,42,24,.06)}
 .empty-kicker{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);font-weight:800}
@@ -654,7 +657,9 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     position: relative !important;
   }
 
-  /* Topbar: 2-row grid — row1: brand + hamburger, row2: dropdown */
+  /* Topbar: sticky in the flex column (NOT fixed).
+     position:fixed takes it out of flow, meaning app-shell starts at top:0
+     and slides behind/under the topbar. sticky keeps it in flow AND pinned. */
   .app-topbar{
     flex-shrink:0;
     display:grid;
@@ -662,13 +667,11 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     grid-template-rows:auto auto;
     gap:0 8px;
     padding:12px 14px;
+    padding-top: max(12px, env(safe-area-inset-top));
     z-index:100;
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
+    position: sticky;
+    top: 0;
     overflow:visible;
-    padding-top:max(54px,env(safe-area-inset-top));
     background:rgba(255,255,255,.88);
     backdrop-filter:blur(18px);
     -webkit-backdrop-filter:blur(18px);
@@ -757,14 +760,16 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     display: none !important;
   }
 
-  /* Messages: Clean flex-grow middle container */
+  /* Messages: Clean flex-grow middle container.
+     No padding-top compensation needed — topbar is sticky (in-flow),
+     so it naturally sits above the messages in the flex column.
+     No padding-bottom needed — composer is in-flow below this. */
   .messages{
     flex: 1 !important;
     min-height: 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    padding: 12px 14px 16px !important;
-    padding-top: calc(70px + env(safe-area-inset-top)) !important; /* Buffer for the fixed topbar */
+    padding: 14px 14px 16px !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-y: contain !important;
     z-index: 1 !important;
@@ -865,21 +870,27 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   .intelligence-header h2{font-size:.95rem !important;margin:0 !important}
   .drawer-close-btn{display:flex !important;width:40px;height:40px;flex-shrink:0;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer}
 
-  /* Composer: absolute bottom lock, never shifts */
+  /* Composer: IN-FLOW flex child — Golden Layout Spec §5.
+     NEVER use position:absolute here — it causes messages to slide under
+     the input box making the chatbox invisible (the bug we're fixing).
+     flex-shrink:0 keeps it pinned at the bottom of the flex column
+     without any coordinate tricks, and it can never overlap messages. */
   .composer{
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
     height: auto !important;
-    z-index: 1000 !important;
+    z-index: 50 !important;
     background: rgba(8,12,22,0.96) !important;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
     border-top: 1px solid var(--border) !important;
     padding: 10px 12px !important;
-    padding-bottom: calc(28px + env(safe-area-inset-bottom)) !important; /* Raised to protect against browser border occlusion */
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
     margin: 0 !important;
+    width: 100% !important;
   }
   .composer-row{display:flex !important;flex-direction:row !important;align-items:flex-end !important;gap:10px !important;flex-wrap:nowrap !important}
   #msg-input{flex:1 !important;min-height:44px !important;max-height:120px !important;font-size:16px !important;resize:none !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch;border-radius:22px;padding:12px 16px;line-height:1.4}
@@ -901,7 +912,20 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   /* Misc */
   .pitch-strip{display:none !important}
   .msg-avatar{width:32px;height:32px}
-  .messages-empty{padding:16px 12px}
+  /* messages-empty: in-flow on mobile so it doesn't float over content.
+     position:absolute (desktop) is overridden here. JS .style.display still works
+     because NO !important is ever on the display property. */
+  .messages-empty{
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
+    margin: auto;
+    padding: 20px 16px;
+    pointer-events: auto;
+  }
   .panel-heading{flex-direction:column;align-items:stretch}
   .panel-actions{width:100%;justify-content:flex-start}
   .detail-row{min-height:44px;display:flex;align-items:center}
