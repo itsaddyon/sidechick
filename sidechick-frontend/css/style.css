@@ -18,24 +18,24 @@
 
 /* ─── 0. Tokens ─────────────────────────────────────────────── */
 :root {
-  --bg:#f7f7fb; --panel:rgba(255,255,255,0.78); --panel-strong:rgba(255,255,255,0.96);
+  --bg:#f7f7fb; --panel:rgba(255,255,255,0.3); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.4); --panel-strong:rgba(255,255,255,0.5); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.6);
   --border:rgba(16,24,40,0.08); --text:#121826; --muted:#58627a;
   --blue:#1dd3ff; --ink:#13233c; --amber:#ffb454; --red:#ff5b7c;
   --green:#25d89c; --sand:#a6b0c9; --accent:#1dd3ff; --accent-2:#a6ff5f;
   --accent-3:#ff6ad5; --accent-warm:#ff9b5f; --radius:22px;
   --shadow:0 24px 70px rgba(10,20,38,0.12);
-  --font-sans:'Space Grotesk',sans-serif; --font-display:'Bricolage Grotesque',sans-serif;
+  --font-sans:'Inter',sans-serif; --font-display:'Outfit',sans-serif;
   --font-mono:'IBM Plex Mono',monospace;
   --bg-grad-1:radial-gradient(circle at 10% 12%,rgba(29,211,255,0.18),transparent 40%);
   --bg-grad-2:radial-gradient(circle at 90% 8%,rgba(255,155,95,0.16),transparent 40%);
   --bg-grad-3:repeating-linear-gradient(140deg,rgba(16,24,40,0.03) 0,rgba(16,24,40,0.03) 1px,transparent 1px,transparent 10px);
-  --bg-grad-4:linear-gradient(180deg,#fbf7ff 0%,#f1f6ff 100%);
+  --bg-grad-4:radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%); background-size: 200% 200%; animation: gradientBG 15s ease infinite;
   --lobby-bg:var(--bg-grad-4);
   --glow-1:radial-gradient(circle,rgba(29,211,255,0.40),transparent 62%);
   --glow-2:radial-gradient(circle,rgba(255,155,95,0.32),transparent 62%);
 }
 body.theme-dark {
-  --bg:#070a12; --panel:rgba(8,12,22,0.92); --panel-strong:rgba(10,16,28,0.97);
+  --bg:#050510; --panel:rgba(15,15,30,0.4); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.1); --panel-strong:rgba(20,20,40,0.6); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.15);
   --border:rgba(64,155,255,0.22); --text:#e9f3ff; --muted:#9bb0d2;
   --blue:#4ce8ff; --ink:#cfe7ff; --amber:#ffbe7a; --red:#ff6f8d;
   --green:#36f2b4; --sand:#7f8bb3; --accent:#4ce8ff; --accent-2:#b8ff62;
@@ -1933,3 +1933,96 @@ body.theme-dark .scorecard { background: rgba(10,16,28,0.85); }
 #lobby.mode-chat .game-selection-panel { display: none !important; }
 #lobby.mode-game .chat-option-panel { display: none !important; }
 #lobby.mode-game .divider { display: none !important; } /* hide 'or' divider */
+/* Game Name Modal */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  z-index: 1000; display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+.modal-content {
+  background: var(--bg-panel); padding: 30px; border-radius: 20px;
+  width: 90%; max-width: 400px; border: 1px solid var(--border);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center;
+  animation: elegantFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.modal-content h2 { margin-bottom: 10px; color: var(--text); }
+.modal-content p { color: var(--text-mut); margin-bottom: 20px; font-size: 0.95rem; }
+.modal-content .lobby-input { width: 100%; margin-bottom: 20px; box-sizing: border-box; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.btn, .choice-card, .game-card {
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease, border-color 0.4s ease !important;
+}
+.btn:active, .choice-card:active, .game-card:active {
+  transform: scale(0.92) !important;
+}
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.premium-toast {
+  background: var(--panel-strong);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 99px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  animation: toastSlideDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  opacity: 0;
+  pointer-events: auto;
+}
+.premium-toast.fade-out {
+  animation: toastFadeOut 0.3s ease forwards;
+}
+@keyframes toastSlideDown {
+  0% { transform: translateY(-30px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes toastFadeOut {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-20px); opacity: 0; }
+}
+/* Suspense Animation */
+.pulse-suspense {
+  animation: suspensePulse 1.5s infinite ease-in-out;
+  color: var(--blue);
+  font-weight: bold;
+}
+@keyframes suspensePulse {
+  0% { transform: scale(1); opacity: 0.7; text-shadow: 0 0 10px rgba(76,232,255,0.2); }
+  50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 20px rgba(76,232,255,0.6); }
+  100% { transform: scale(1); opacity: 0.7; text-shadow: 0 0 10px rgba(76,232,255,0.2); }
+}
+
+/* Staggered Mode Cards */
+.games-grid .game-card {
+  opacity: 0;
+  animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.games-grid .game-card:nth-child(1) { animation-delay: 0.1s; }
+.games-grid .game-card:nth-child(2) { animation-delay: 0.2s; }
+.games-grid .game-card:nth-child(3) { animation-delay: 0.3s; }
+.games-grid .game-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideUpFade {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+\n.game-section { overflow-y: auto; padding-bottom: 80px; }\n

@@ -7,11 +7,11 @@
 <title>Sidechick | Private Rooms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml"/>
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.5"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.6"/>
 </head>
 <body class="intro-active">
 <div id="intro-loader" class="intro-loader" aria-label="Sidechick loading intro">
@@ -84,12 +84,6 @@
           <div class="panel-kicker">Play together</div>
           <h2>Pick a game</h2>
         </div>
-      </div>
-
-      <!-- Name input FIRST -->
-      <div class="simple-entry" style="margin-bottom: 24px;">
-        <label class="field-label" for="game-username-input">Enter Your Name</label>
-        <input class="lobby-input" id="game-username-input" placeholder="What should they call you?" maxlength="20" autocomplete="off" autofocus inputmode="text"/>
       </div>
 
       <div class="games-grid">
@@ -489,7 +483,7 @@
     <div class="game-room-info" id="game-room-info">
       <span id="game-type-display">Game</span> • <span id="game-code-display">#CODE</span>
     </div>
-    <button class="ghost-btn topbar-btn" id="game-copy-btn" onclick="copyGameCode()" aria-label="Copy game code">
+    <button class="ghost-btn topbar-btn" id="game-copy-btn" onclick="copyInviteLink()" aria-label="Copy game code">
       <span class="btn-icon">⧉</span>
       <span class="btn-label">Copy</span>
     </button>
@@ -507,7 +501,7 @@
           <p>Share this code with your friend:</p>
           <div class="code-display" id="code-display">
             <code id="game-code-large">ABCD1234</code>
-            <button onclick="copyGameCode()" class="copy-icon-btn" title="Copy code">📋</button>
+            <button onclick="copyInviteLink()" class="copy-icon-btn" title="Copy Invite Link">🔗 Copy Link</button>
           </div>
         </div>
 
@@ -579,6 +573,20 @@
   </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/app.js') }}?v=3.5"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=3.6"></script>
+<!-- Game Name Modal -->
+<div id="game-name-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <h2 id="game-modal-title">Ready to Play?</h2>
+    <p>What should we call you in this game?</p>
+    <input type="text" id="modal-game-username" class="lobby-input" placeholder="Enter your name" maxlength="20" autocomplete="off" autofocus>
+    <div class="modal-actions">
+      <button class="ghost-btn" onclick="closeGameModal()">Cancel</button>
+      <button class="primary-btn" onclick="submitGameName()">Let's Go</button>
+    </div>
+  </div>
+</div>
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container"></div>
 </body>
 </html>
