@@ -824,7 +824,7 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
   }
 
   #ai-panel {
-    display: flex !important;
+    display: none !important; /* HIDE BY DEFAULT ON MOBILE TO PREVENT HORIZONTAL SCROLL OVERFLOW */
     position: fixed !important;
     top: 0 !important; right: 0 !important; bottom: 0 !important;
     width: min(88vw, 360px) !important;
@@ -837,10 +837,14 @@ body.theme-dark .vibe-drawer-body .intel-tabs{background:rgba(8,12,22,.98)}
     border-left: 1px solid var(--border) !important;
     box-shadow: -8px 0 40px rgba(0,0,0,.35) !important;
     background: var(--panel-strong) !important;
-    height: 100dvh !important;
+    height: 100% !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+  }
+  #ai-panel.mobile-visible {
+    display: flex !important; /* ONLY DISPLAY WHEN ACTIVE */
+    transform: translateX(0) !important;
   }
   body.theme-dark #ai-panel {
     background: rgba(8,12,22,.98) !important;
