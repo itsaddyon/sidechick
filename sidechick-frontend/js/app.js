@@ -2980,6 +2980,10 @@ function copyGameCode() {
 
 function leaveGame() {
   document.body.classList.remove('game-active', 'app-active');
+  const gameScreen = document.getElementById('game-screen');
+  if (gameScreen) {
+    gameScreen.classList.remove('is-active');
+  }
   showScreen('mode-select', 'flex');
   currentGameCode = '';
   currentGameType = '';
