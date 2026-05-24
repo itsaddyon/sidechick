@@ -2968,6 +2968,7 @@ function showGameScreen(gameType, gameCode, username) {
   myRoom = gameCode;
   
   console.log('=== showGameScreen COMPLETE ===');
+  const gameScreenEl = document.getElementById('game-screen');
   console.log('Final state:', { myName, myRoom, gameScreenDisplay: gameScreenEl?.style.display });
 }
 
