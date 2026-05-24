@@ -401,8 +401,7 @@ function enterRoom(username,room,subText){
   const empty=document.getElementById('messages-empty');if(empty)empty.style.display='grid';
   if(!socket.connected)socket.connect();
   socket.emit('join',{username,room});
-  document.getElementById('lobby').style.display='none';
-  document.getElementById('app').style.display='flex';
+  showScreen('app', 'flex');
   document.body.classList.add('app-active');
   document.getElementById('header-title').textContent='Room '+room;
   document.getElementById('header-sub').textContent=subText||"You're chatting as "+username+'.';
@@ -417,8 +416,7 @@ function enterRoom(username,room,subText){
 }
 function leaveChat(){
   hideThreatStop();
-  document.getElementById('app').style.display='none';
-  document.getElementById('lobby').style.display='flex';
+  showScreen('mode-select', 'flex');
   document.body.classList.remove('app-active');
   myName='';myRoom='';setOpenMatchWaiting(false);setMatchStatus('','');
   toggleTopbarMenu(false);
@@ -2931,45 +2929,18 @@ function showGameScreen(gameType, gameCode, username) {
   document.body.scrollTop = 0;
   console.log('=== showGameScreen START ===');
   console.log('gameType:', gameType, 'gameCode:', gameCode, 'username:', username);
-  
-  // Hide lobby, show game screen
-  const lobbyEl = document.getElementById('lobby');
-  const appEl = document.getElementById('app');
-  const gameScreenEl = document.getElementById('game-screen');
-  
-  console.log('Elements found:', { lobby: !!lobbyEl, app: !!appEl, gameScreen: !!gameScreenEl });
-  
-  if(lobbyEl) {
-    lobbyEl.style.display = 'none';
-    console.log('Hid lobby');
-  }
-  if(appEl) {
-    appEl.style.display = 'none';
-    console.log('Hid app');
-  }
-  if(gameScreenEl) {
-    gameScreenEl.classList.add('is-active');
-    // Force inline style — beats any CSS rule regardless of specificity or caching
-    gameScreenEl.style.cssText = 'display:flex !important; flex-direction:column; position:fixed; inset:0; z-index:500; overflow:hidden;';
-    console.log('Showed game-screen via is-active class + inline style');
-  } else {
-    console.error('❌ game-screen element NOT found!');
-    return;
-  }
-  
-  document.body.classList.add('game-active', 'app-active');
-  console.log('Added game-active class to body');
-  
+
+  showScreen('game-screen', 'flex');
+  document.body.classList.add('game-active');
+  document.body.classList.remove('app-active');
+
   // Update game info
   const gameInfo = GAME_DATA[gameType];
   if(!gameInfo) {
     console.error('❌ Game data not found for type:', gameType);
-    console.log('Available games:', Object.keys(GAME_DATA));
     return;
   }
-  
-  console.log('Game info:', gameInfo);
-  
+
   const elements = {
     'game-emoji': gameInfo.emoji,
     'game-title': gameInfo.name,
@@ -2978,33 +2949,21 @@ function showGameScreen(gameType, gameCode, username) {
     'game-code-display': '#' + gameCode,
     'game-code-large': gameCode
   };
-  
+
   for(let [id, text] of Object.entries(elements)) {
     const el = document.getElementById(id);
-    if(el) {
-      el.textContent = text;
-      console.log(`✓ Updated #${id} to "${text}"`);
-    } else {
-      console.warn(`⚠️ Element #${id} not found`);
-    }
+    if(el) { el.textContent = text; }
+    else { console.warn(`⚠️ Element #${id} not found`); }
   }
-  
-  // Make sure game-lobby is visible and other sections are hidden
+
+  // Make sure game-lobby section is visible
   const gameLobby = document.getElementById('game-lobby');
   const gamePlay = document.getElementById('game-play');
   const gameResults = document.getElementById('game-results');
-  
-  if(gameLobby) {
-    gameLobby.style.display = 'flex';
-    console.log('✓ Set game-lobby to display: flex');
-  }
-  if(gamePlay) {
-    gamePlay.style.display = 'none';
-  }
-  if(gameResults) {
-    gameResults.style.display = 'none';
-  }
-  
+  if(gameLobby) gameLobby.style.display = 'flex';
+  if(gamePlay) gamePlay.style.display = 'none';
+  if(gameResults) gameResults.style.display = 'none';
+
   myName = username;
   myRoom = gameCode;
   
@@ -3019,14 +2978,8 @@ function copyGameCode() {
 }
 
 function leaveGame() {
-  const gameScreenEl = document.getElementById('game-screen');
-  if(gameScreenEl) {
-    gameScreenEl.classList.remove('is-active');
-    gameScreenEl.style.cssText = '';
-  }
-  document.getElementById('lobby').style.display = '';
-  document.getElementById('app').style.display = 'none';
   document.body.classList.remove('game-active', 'app-active');
+  showScreen('mode-select', 'flex');
   currentGameCode = '';
   currentGameType = '';
   myRoom = '';
@@ -3068,7 +3021,7 @@ socket.on('system',(data)=>{
 socket.on('user_joined',(data)=>{if(data.username!==myName)document.getElementById('header-sub').textContent=data.username+' joined the room.'});
 socket.on('user_left',(data)=>{document.getElementById('header-sub').textContent=data.username+' left the room.'});
 socket.on('join_error',(data)=>{
-  document.getElementById('app').style.display='none';document.getElementById('lobby').style.display='flex';
+  showScreen('mode-select', 'flex');
   document.body.classList.remove('app-active');myRoom='';setOpenMatchWaiting(false);
   setMatchStatus((data&&data.message)||'Could not join this room.','cancelled');
 });
@@ -3368,7 +3321,7 @@ function initIntroLoader(){
   const intro=document.getElementById('intro-loader');const skip=document.getElementById('intro-skip');
   if(!intro){
     document.body.classList.remove('intro-active');
-    document.getElementById('mode-select').style.display = 'flex';
+    showScreen('mode-select', 'flex');
     return;
   }
   const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -3382,7 +3335,7 @@ function initIntroLoader(){
     document.body.classList.remove('intro-active');
     setTimeout(() => {
       intro.remove();
-      document.getElementById('mode-select').style.display = 'flex';
+      showScreen('mode-select', 'flex');
     }, 650);
   };
   
@@ -3390,30 +3343,46 @@ function initIntroLoader(){
   setTimeout(dismissIntro,duration);
 }
 
+// ── Single-screen manager ───────────────────────────────────────
+// ALL screens share the same DOM. display:none alone doesn't stop the
+// body from being scrollable past hidden screens. We use position:fixed
+// + visibility:hidden on every INACTIVE screen so they're fully removed
+// from document flow. Only the active screen is in the normal flow.
+const SCREENS = ['intro-loader', 'mode-select', 'lobby', 'app', 'game-screen'];
+
+function showScreen(activeId, displayValue) {
+  SCREENS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id === activeId) {
+      el.style.position = '';
+      el.style.visibility = '';
+      el.style.pointerEvents = '';
+      el.style.display = displayValue || 'flex';
+    } else {
+      // Yank out of flow entirely — can never be scrolled to
+      el.style.display = 'none';
+      el.style.position = 'fixed';
+      el.style.visibility = 'hidden';
+      el.style.pointerEvents = 'none';
+    }
+  });
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
 // ── Mode Selection ──────────────────────────────────────────────
 function selectMode(mode) {
-  const modeSelect = document.getElementById('mode-select');
   const lobby = document.getElementById('lobby');
-  
-  modeSelect.style.display = 'none';
-  lobby.style.display = 'block';
-  
-  // Clear previous mode classes
+  showScreen('lobby', 'flex');
   lobby.classList.remove('mode-chat', 'mode-game');
-  
-  if (mode === 'chat') {
-    lobby.classList.add('mode-chat');
-  } else if (mode === 'game') {
-    lobby.classList.add('mode-game');
-  }
+  if (mode === 'chat') lobby.classList.add('mode-chat');
+  else if (mode === 'game') lobby.classList.add('mode-game');
 }
 
 function backToModeSelect() {
-  const modeSelect = document.getElementById('mode-select');
-  const lobby = document.getElementById('lobby');
-  
-  lobby.style.display = 'none';
-  modeSelect.style.display = 'flex';
+  showScreen('mode-select', 'flex');
 }
 
 let currentQuestionIndex = 0;
