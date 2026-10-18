@@ -1,87 +1,43 @@
-<div align="center">
-  <img src="static/favicon.svg" width="120" height="120" alt="Sidechick Logo">
-  
-  # Sidechick
-  
-  **Your Private Chat Space & Couple's Game Hub. No cap.** 💯
-  
-  <i>Built for trust, safety, and deep psychological insights. We literally can't see your convo — not even the dev who built us.</i>
-</div>
+# sidechick.
 
----
+**Chat. Play. Poof. 💨**
+Private rooms that disappear when everyone leaves. Chat with your people and play quick games. No sign-up, nothing saved.
 
-## 🌟 The Vibe Check Zone
+## How it works
 
-Welcome to **Sidechick**, an application designed from the ground up for our college community. We wanted a place to chat, vibe, and play games with friends or partners without worrying about data harvesting, creepy tracking, or boring, lifeless interfaces. 
+1. Tap **Start a room**, pick an emoji and a nickname.
+2. Hit **Invite** and send the link to friends (WhatsApp, Insta, anywhere).
+3. Chat, react to messages, or tap 🎮 to play:
+   - 🧠 **Same Brain?** pick one, see if you think alike
+   - 🔥 **Hot Takes** agree or nope
+   - 🫵 **Know Me** one person answers, everyone else guesses
+4. Everyone leaves, the room is gone. Poof.
 
-Whether you want to dive deep into secure, ephemeral **Private Chat Rooms**, or find out how well you *really* know your partner in the synchronized **Couple Games** arena, Sidechick is your spot.
-
-### 🎭 Two Paths, One Vibe
-
-#### 💬 The Private Chat
-A high-tech, end-to-end encrypted feel. Chat with your friends knowing that as soon as the room is empty, **everything auto-destructs**.
-- **Dynamic Mood Backgrounds:** The interface is alive. The background shifts in real-time based on the AI-detected emotional tone of the conversation.
-- **Detective Mode:** An immersive, high-tech "terminal" aesthetic for investigative sessions, tracking behavioral drift and keeping the vibe safe.
-- **Identity Glows:** Every participant gets a unique, hashing-based color glow to their message bubbles.
-
-#### 🎮 The Couple Games
-A synchronized, real-time multiplayer experience designed to test your bond. Grab an invite code, send it to a friend, and play simultaneously!
-- **Game Modes:** "Spicy or Sweet", "Truth or Lie", and "Couple Trivia".
-- **Real-Time Sync:** When you choose an answer, the game locks in and waits for your partner. See the results instantly!
-- **The Climax:** An animated heartbeat results screen with a beautifully animated compatibility ring. If you score over 80%, watch the screen explode in fireworks and confetti! 🎆
-
----
-
-## 🚀 How to Run It (For Devs)
-
-We split the deployment into two parts to keep things lightning fast:
-- **Frontend (Vercel):** The beautiful HTML/CSS/JS interface.
-- **Backend (Render):** The Python Flask server handling the WebSockets, real-time game states, and AI logic.
-
-### Quick Start (Local Development)
-Want to run the whole thing on your own machine? It's easy:
+## Run it
 
 ```bash
-# 1. Install the requirements
 pip install -r requirements.txt
-
-# 2. Download the NLP datasets (only needed once!)
-python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
-
-# 3. Fire up the server
-python app.py
+python app.py        # http://localhost:5000
 ```
-Open `http://127.0.0.1:5000` in your browser and you're in!
 
-### Compiling the Frontend
-If you make changes to the UI and want to push them to Vercel, run our handy sync script:
-```bash
-python build_frontend.py
+Optional `.env`: `PORT`, `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`.
+
+## Deploy
+
+- **Backend (Render):** `python app.py`. Use a single instance, rooms live in memory.
+- **Frontend (Vercel):** run `python build_frontend.py`, then deploy `sidechick-frontend/`. The backend URL is set at the top of `static/js/app.js`.
+
+## Project layout
+
 ```
-This prepares everything in the `sidechick-frontend/` directory, ready to be deployed.
+app.py          rooms, chat, game engine (Flask-SocketIO)
+games.py        question banks, add your own here
+static/         the whole frontend (HTML, CSS, one JS file)
+legacy/v1/      the original version, kept for reference (tag: v1-final)
+```
 
----
+## Privacy, honestly
 
-## 🛠️ The Tech Stack
+Messages are held in server memory only while a room has people in it. When the last person leaves, the room and its messages are deleted. There is no database and no accounts. Messages are not end-to-end encrypted.
 
-- **Backend:** Python 3.11, Flask, Flask-SocketIO (Eventlet) for blazing fast real-time sync.
-- **NLP Engine:** TextBlob + Custom Recurrent Sequence Model for mood tracking.
-- **Frontend:** Vanilla HTML/CSS/JS (Custom Modern Design System, absolutely no templates!).
-
----
-
-## 🎓 The Team
-
-Built with ❤️ by **Team Grey Hats**.
-
-<div align="center">
-
-| | Contributor | Role | Socials |
-| :--- | :--- | :--- | :--- |
-| <img src="https://github.com/itsaddyon.png" width="50" style="border-radius:50%"> | **Adarsh Arya** | Lead Developer & Architect | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/itsaddyon) [![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/itsaddyon) |
-
-</div>
-
-<p align="center">
-  <i>Created for the community. Your vibes, your rules.</i>
-</p>
+Built by Team Grey Hats.
