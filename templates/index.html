@@ -10,6 +10,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml"/>
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+  if (typeof io === 'undefined') {
+    const backendUrl = window.location.hostname.includes('vercel.app') ? 'https://sidechick-syej.onrender.com' : '';
+    document.write('<script src="' + backendUrl + '/socket.io/socket.io.js"><\/script>');
+  }
+</script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4.9"/>
 <!-- Vercel Web Analytics -->
