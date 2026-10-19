@@ -1,43 +1,59 @@
 # sidechick.
 
-**Chat. Play. Poof. 💨**
-Private rooms that disappear when everyone leaves. Chat with your people and play quick games. No sign-up, nothing saved.
+**Chat. Play. Poof. 💨** Meet someone new, play quick games, or hang in a private room. Nothing is saved. 18+.
 
-## How it works
+## What's inside
 
-1. Tap **Start a room**, pick an emoji and a nickname.
-2. Hit **Invite** and send the link to friends (WhatsApp, Insta, anywhere).
-3. Chat, react to messages, or tap 🎮 to play:
-   - 🧠 **Same Brain?** pick one, see if you think alike
-   - 🔥 **Hot Takes** agree or nope
-   - 🫵 **Know Me** one person answers, everyone else guesses
-4. Everyone leaves, the room is gone. Poof.
+| | |
+|---|---|
+| 🎭 **Meet someone new** | Omegle-style random chat. Optional interests match you faster. Skip, report, or turn the chat into a game. |
+| 🎮 **Play a game** | No chatting needed. Play with a friend (link), a random stranger, or on one phone (pass and play). |
+| 🔒 **Private room** | Share a 4-letter code or link. Chat, react, play. |
+| ✨ **Small hooks** | Daily streak, badges, question of the day, icebreaker button. All stored on the user's device only. |
+
+**Games:** Same Brain?, Hot Takes, Know Me, Compatibility Quiz, Couple Trivia, Truth or Lie, Spicy or Sweet (18+).
+The four couple packs are the original v1 questions, unchanged. Spicy packs only work in private rooms and same-phone, never with strangers.
 
 ## Run it
 
 ```bash
-pip install -r requirements.txt
-python app.py        # http://localhost:5000
+npm install
+npm run dev          # http://localhost:8787
+npm test             # backend end-to-end test (boots a local server)
+node scripts/ui-smoke.mjs   # clicks through the real UI in jsdom
 ```
 
-Optional `.env`: `PORT`, `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`.
+## Deploy (Cloudflare, free, no sleeping)
 
-## Deploy
+One project, one deploy. The Worker serves the frontend *and* the realtime backend, so there is no separate frontend folder.
 
-- **Backend (Render):** `python app.py`. Use a single instance, rooms live in memory.
-- **Frontend (Vercel):** run `python build_frontend.py`, then deploy `sidechick-frontend/`. The backend URL is set at the top of `static/js/app.js`.
+```bash
+npx wrangler login
+npm run deploy       # gives you https://sidechick.<you>.workers.dev
+```
 
-## Project layout
+Optional: set a secret salt for the anonymous IP hash with `npx wrangler secret put SALT`.
+
+**Free-plan limits (Workers Free):** 100,000 requests/day and 13,000 GB-s of Durable Object time/day. Each open room costs duration while people are connected, so expect roughly 25 to 30 room-hours of live chat per day. That covers a campus launch. If you outgrow it, Workers Paid is $5/month. Rooms auto-close after 10 idle minutes (3 hours max) to stay inside the limits.
+
+## Layout
 
 ```
-app.py          rooms, chat, game engine (Flask-SocketIO)
-games.py        question banks, add your own here
-static/         the whole frontend (HTML, CSS, one JS file)
-legacy/v1/      the original version, kept for reference (tag: v1-final)
+src/worker.js        routes /ws/* and /api/*, serves the site
+src/room.js          one Durable Object per live room (chat, games, safety)
+src/matchmaker.js    pairs strangers (interests, patience, cooldowns)
+public/              the whole frontend (HTML, CSS, ES modules)
+public/shared/       game engine + question banks, used by server AND browser
+scripts/             tests
+legacy/v1/           the original Flask version (git tag: v1-final)
 ```
 
 ## Privacy, honestly
 
-Messages are held in server memory only while a room has people in it. When the last person leaves, the room and its messages are deleted. There is no database and no accounts. Messages are not end-to-end encrypted.
+- Messages and answers live in memory only while a room is open. No database, no accounts, no ads, no analytics.
+- Profile, streak and badges stay in the browser (`localStorage`), with an "erase everything" button.
+- Random chats block links, phone numbers, emails and explicit solicitation. Reports end the chat. Repeat reports trigger a 30-minute cooldown, tracked by an anonymous ID and a hashed IP in memory, never with chat content.
+- Not end-to-end encrypted: the server relays messages in memory.
+- 18+ is self-declared. It can't be verified.
 
 Built by Team Grey Hats.
