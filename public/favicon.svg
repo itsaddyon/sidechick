@@ -1,1 +1,6 @@
-²ø1šYì
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<rect width="64" height="64" rx="18" fill="#FF5B3A"/>
+<rect x="8" y="10" width="32" height="24" rx="10" fill="#F6F1E7"/><polygon points="14,31 14,43 26,33" fill="#F6F1E7"/>
+<rect x="22" y="24" width="36" height="28" rx="12" fill="#FF5B3A"/><polygon points="48,48 50,59 38,50" fill="#FF5B3A"/>
+<rect x="25" y="27" width="30" height="22" rx="9" fill="#0E0D12"/><polygon points="47,46 48,56 39,48" fill="#0E0D12"/>
+<circle cx="34" cy="38" r="2.4" fill="#F6F1E7"/><circle cx="40" cy="38" r="2.4" fill="#F6F1E7"/><circle cx="46" cy="38" r="2.4" fill="#F6F1E7"/></svg>

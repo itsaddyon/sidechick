@@ -3,6 +3,10 @@ import { Matchmaker } from './matchmaker.js';
 export { Room, Matchmaker };
 
 const CODE_RE = /^[BCDFGHJKLMNPQRSTVWXZ]{4,5}$/;
+const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; " +
+  "img-src 'self' data:; connect-src 'self' wss: ws:; manifest-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+const SECURITY = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin',
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()', 'content-security-policy': CSP };
 
 async function ipHash(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || '0';
@@ -27,12 +31,23 @@ async function ws(request, env, url) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/ws/')) return ws(request, env, url);
-    if (url.pathname === '/api/stats') {
+    const p = url.pathname;
+    if (p.startsWith('/ws/')) return ws(request, env, url);
+    if (p === '/api/stats') {
       const r = await env.MATCH.get(env.MATCH.idFromName('global')).fetch('https://m/stats');
       return new Response(r.body, { headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
     }
-    if (url.pathname === '/api/health') return Response.json({ ok: true });
+    if (p === '/api/health') return Response.json({ ok: true });
+    if (p === '/robots.txt')
+      return new Response(`User-agent: *\nAllow: /\nDisallow: /ws/\nDisallow: /api/\n\nSitemap: ${url.origin}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
+    if (p === '/sitemap.xml')
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${url.origin}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url></urlset>\n`,
+        { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
+    if (p === '/') {                                           // fill in absolute URLs for canonical + social previews
+      const res = await env.ASSETS.fetch(request);
+      const html = (await res.text()).replaceAll('__ORIGIN__', url.origin);
+      return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', ...SECURITY } });
+    }
     return env.ASSETS.fetch(request);
   },
 };

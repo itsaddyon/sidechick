@@ -1,31 +1,38 @@
-// Everything here lives only on the user's device (localStorage). Nothing is sent to the server except
-// the nickname/emoji used inside a room.
+// Everything here lives only on the user's device (localStorage). The server never sees it.
+// Only the nickname and avatar are sent, and only inside a room, and only while you're in it.
 const KEY = 'sidechick.v2';
-const fresh = () => ({ name: '', emoji: '😎', adult: false, cid: (crypto.randomUUID?.() || String(Math.random())).slice(0, 18),
+const fresh = () => ({ name: '', av: 'a0', adult: false, cid: (crypto.randomUUID?.() || String(Math.random())).slice(0, 18),
   streak: 0, lastDay: '', games: 0, chats: 0, badges: {}, interests: [] });
 
 let data;
 try { data = { ...fresh(), ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { data = fresh(); }
+if (!/^a\d{1,2}$/.test(data.av || '')) data.av = 'a0';        // older saves used emoji avatars
+delete data.emoji;
 export const store = data;
 export const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} };
 
 export const BADGES = {
-  first_chat: { e: '🎭', t: 'Icebreaker', d: 'Chat with a stranger' },
-  first_game: { e: '🎮', t: 'Player one', d: 'Finish a game' },
-  perfect:    { e: '💯', t: 'Mind meld', d: 'Score 100% in a game' },
-  streak3:    { e: '🔥', t: 'On fire', d: 'Visit 3 days in a row' },
-  night:      { e: '🌙', t: 'Night owl', d: 'Play after midnight' },
-  inviter:    { e: '💌', t: 'Connector', d: 'Invite someone' },
+  first_chat: { icon: 'message-circle', t: 'Icebreaker', d: 'Chat with a stranger' },
+  first_game: { icon: 'gamepad-2', t: 'Player one', d: 'Finish a game' },
+  perfect:    { icon: 'trophy', t: 'Mind meld', d: 'Score 100% in a game' },
+  streak3:    { icon: 'flame', t: 'On fire', d: 'Play 3 days in a row' },
+  night:      { icon: 'moon-star', t: 'Night owl', d: 'Play after midnight' },
+  inviter:    { icon: 'share-2', t: 'Connector', d: 'Invite someone' },
 };
 
 const dayKey = d => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-export function touchStreak() {
-  const now = new Date(), today = dayKey(now);
-  if (data.lastDay === today) return;
-  const y = new Date(now); y.setDate(y.getDate() - 1);
-  data.streak = data.lastDay === dayKey(y) ? data.streak + 1 : 1;
-  data.lastDay = today; save();
+const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); return dayKey(y); };
+
+/** Streak counts days you actually played or chatted, not days you just opened the app. */
+export function currentStreak() { return data.lastDay === dayKey(new Date()) || data.lastDay === yesterday() ? data.streak : 0; }
+export const doneToday = () => data.lastDay === dayKey(new Date());
+export function recordActivity() {
+  const today = dayKey(new Date());
+  if (data.lastDay === today) return false;
+  data.streak = data.lastDay === yesterday() ? data.streak + 1 : 1;
+  data.lastDay = today; save(); return true;
 }
+
 export function bump(key) { data[key] = (data[key] || 0) + 1; save(); }
 /** returns the badge object if newly unlocked, else null */
 export function unlock(id) {

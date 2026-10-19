@@ -1,4 +1,7 @@
 // Small helpers shared by every screen.
+import { icon } from './icons.js';
+import { avatar, AVATAR_IDS } from './avatars.js';
+export { icon, avatar, AVATAR_IDS };
 export const $ = (s, r = document) => r.querySelector(s);
 
 export function h(tag, props = {}, ...kids) {
@@ -16,6 +19,9 @@ export const rand = a => a[Math.floor(Math.random() * a.length)];
 export const buzz = p => { try { navigator.vibrate?.(p); } catch {} };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** Switches colours, display font and background for the current screen (see css [data-theme]). */
+export const setTheme = name => { document.body.dataset.theme = name || 'brand'; };
+
 let toastT;
 export function toast(text, ms = 2800) {
   const el = $('#toast'); if (!el) return;
@@ -23,16 +29,17 @@ export function toast(text, ms = 2800) {
   toastT = setTimeout(() => el.classList.remove('show'), ms);
 }
 
+/** Confetti in the current screen's accent colour (never a rainbow). */
 export function confetti(n = 36) {
   if (reduced()) return;
-  const set = ['🎉', '✨', '💛', '🎊', '💖'];
+  const shapes = ['c-dot', 'c-sq', 'c-bar'], tones = ['t1', 't2', 't1', 't3'];
   for (let i = 0; i < n; i++) {
-    const c = h('div', { class: 'confetti', style: `left:${Math.random() * 100}vw;animation-delay:${Math.random() * 0.5}s;font-size:${18 + Math.random() * 14}px` }, set[i % set.length]);
-    document.body.append(c); setTimeout(() => c.remove(), 3200);
+    const c = h('i', { class: `confetti ${shapes[i % 3]} ${tones[i % 4]}`, style: `left:${Math.random() * 100}vw;animation-delay:${Math.random() * 0.5}s;animation-duration:${2 + Math.random() * 1.6}s` });
+    document.body.append(c); setTimeout(() => c.remove(), 4000);
   }
 }
 
-/** Bottom sheet. Returns { close, el }. content: element(s). */
+/** Bottom sheet. Returns { close, el }. */
 export function sheet(content, { onclose } = {}) {
   const layer = $('#layer');
   const close = () => { wrap.remove(); onclose?.(); };
@@ -45,7 +52,7 @@ export function sheet(content, { onclose } = {}) {
 export async function share({ title = 'Sidechick', text, url }) {
   try { if (navigator.share) { await navigator.share({ title, text, url }); return 'shared'; } }
   catch (e) { if (e && e.name === 'AbortError') return 'cancelled'; }
-  try { await navigator.clipboard.writeText([text, url].filter(Boolean).join('\n')); toast('Copied. Paste it anywhere 📋'); return 'copied'; }
+  try { await navigator.clipboard.writeText([text, url].filter(Boolean).join('\n')); toast('Copied. Paste it anywhere.'); return 'copied'; }
   catch { toast(url || text); return 'failed'; }
 }
 
@@ -56,9 +63,12 @@ export function countUp(el, to, ms = 900) {
   requestAnimationFrame(step);
 }
 
-export function emojiPicker(list, current, onPick) {
-  const grid = h('div', { class: 'emoji-grid' });
-  list.forEach(e => grid.append(h('button', { type: 'button', class: e === current ? 'on' : '', 'aria-label': 'Avatar ' + e,
-    onclick: ev => { onPick(e); grid.querySelectorAll('button').forEach(b => b.classList.remove('on')); ev.currentTarget.classList.add('on'); buzz(6); } }, e)));
+export function avatarPicker(current, onPick) {
+  const grid = h('div', { class: 'avatar-grid' });
+  AVATAR_IDS.forEach(id => grid.append(h('button', { type: 'button', class: id === current ? 'on' : '', 'aria-label': 'Choose avatar ' + id,
+    onclick: ev => { onPick(id); grid.querySelectorAll('button').forEach(b => b.classList.remove('on')); ev.currentTarget.classList.add('on'); buzz(6); } }, avatar(id, 46))));
   return grid;
 }
+
+/** Icon inside a coloured rounded square, used for tiles and cards. */
+export const iconBox = (name, size = 24, cls = '') => h('span', { class: 'icon-box ' + cls }, icon(name, size));

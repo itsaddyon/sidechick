@@ -55,7 +55,7 @@ export class Matchmaker {
     let pool = 'chat';
     if (typeof m.pool === 'string' && m.pool.startsWith('game:')) {
       const kind = m.pool.slice(5);
-      if (!GAMES[kind] || GAMES[kind].tier === 'spicy') return this.send(conn.ws, { t: 'error', text: 'That game is for private rooms only.' });
+      if (!GAMES[kind]) return this.send(conn.ws, { t: 'error', text: 'Unknown game.' });
       pool = m.pool;
     }
     const interests = new Set((Array.isArray(m.interests) ? m.interests : []).slice(0, 5).map(s => String(s).slice(0, 24)));
@@ -108,18 +108,19 @@ export class Matchmaker {
 
   async pair(a, b, shared) {
     const kind = a.pool === 'chat' ? null : a.pool.slice(5);
+    const token = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
     for (let tries = 0; tries < 4; tries++) {
       const code = makeCode(5);
       const stub = this.env.ROOM.get(this.env.ROOM.idFromName(code));
       let res;
-      try { res = await stub.fetch('https://room/init', { method: 'POST', body: JSON.stringify({ code, mode: kind ? 'gamerandom' : 'random', kind, rounds: 10 }) }); }
+      try { res = await stub.fetch('https://room/init', { method: 'POST', body: JSON.stringify({ code, token, mode: kind ? 'gamerandom' : 'random', kind, rounds: 10 }) }); }
       catch { return false; }
       if (res.status === 409) continue;
       this.q = this.q.filter(x => x !== a && x !== b); a.conn.entry = b.conn.entry = null;
       this.recent.set(a.cid + '|' + b.cid, Date.now() + RECENT_MS);
       for (const [k, t] of this.recent) if (t < Date.now()) this.recent.delete(k);
       for (const e of [a, b]) {
-        this.send(e.ws, { t: 'matched', room: code, kind, shared });
+        this.send(e.ws, { t: 'matched', room: code, token, kind, shared });
         try { e.ws.close(1000); } catch {}
       }
       return true;

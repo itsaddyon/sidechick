@@ -5,22 +5,21 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.f
 
 export function verdict(engine, pct) {
   if (engine === 'guess') {
-    if (pct >= 80) return 'You two share one brain 🧠';
-    if (pct >= 55) return 'You know each other well 👀';
-    if (pct >= 30) return 'Still getting to know each other 🌱';
-    return 'Strangers? Time to talk more 😅';
+    if (pct >= 80) return 'You know them inside out';
+    if (pct >= 55) return 'You know them pretty well';
+    if (pct >= 30) return 'Still getting to know each other';
+    return 'So much left to discover';
   }
-  if (pct >= 85) return 'Same brain. Kinda scary. 🧠';
-  if (pct >= 65) return 'Pretty in sync ✨';
-  if (pct >= 40) return 'Opposites attract? 🧲';
-  return 'Total chaos. Love it. 🎢';
+  if (pct >= 85) return 'Practically in sync';
+  if (pct >= 65) return 'Strong overlap';
+  if (pct >= 40) return 'Different takes, great conversations ahead';
+  return 'Opposite answers, so much to talk about';
 }
-
 export class Game {
   /** players: array of ids. opts.rounds: number or 'full' */
   constructor(kind, players, opts = {}) {
     const meta = GAMES[kind];
-    this.kind = kind; this.engine = meta.engine; this.title = meta.name; this.emoji = meta.emoji;
+    this.kind = kind; this.engine = meta.engine; this.title = meta.name; this.icon = meta.icon; this.theme = meta.theme; this.tier = meta.tier;
     const pool = shuffle(BANK[kind].map(x => ({ q: x.q, o: x.o })));
     const n = opts.rounds === 'full' ? pool.length : Math.min(pool.length, Number(opts.rounds) || 10);
     this.qs = pool.slice(0, n);
@@ -106,7 +105,7 @@ export class Game {
 
   /** public snapshot; users: {id: {name, emoji}} */
   view(users, present) {
-    const v = { kind: this.kind, title: this.title, emoji: this.emoji, engine: this.engine, nsfw: !!GAMES[this.kind].nsfw,
+    const v = { kind: this.kind, title: this.title, icon: this.icon, theme: this.theme, tier: this.tier, engine: this.engine, nsfw: !!GAMES[this.kind].nsfw,
                 total: this.qs.length, i: this.i, phase: this.phase };
     if (this.phase === 'done') {
       v.result = { ...this.result };

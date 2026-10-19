@@ -1,25 +1,20 @@
-// One Durable Object = one live room. Everything lives in memory only: no storage, no logs.
+// One Durable Object = one live room (max 2 people). Everything lives in memory only: no storage, no logs.
 // When the last person leaves (or the room goes idle) the object clears itself. Poof.
 import { Game } from '../public/shared/engine.js';
-import { GAMES, ICEBREAKERS } from '../public/shared/questions.js';
+import { GAMES } from '../public/shared/questions.js';
 
-const MAX_USERS = { private: 8, game: 8, random: 2, gamerandom: 2 };
+const MAX_USERS = 2;
 const IDLE_MS = 10 * 60 * 1000, MAX_LIFE_MS = 3 * 60 * 60 * 1000, EMPTY_MS = 60 * 1000;
 const MAX_HISTORY = 120, REACTS = ['❤️', '😂', '🔥', '👍', '😮'];
 
 const THREAT = /\b(i('ll| will) kill you|kill yourself|kys|i know where you live|i will find you|rape you)\b/i;
-const STRANGER_BLOCKS = [
-  [/https?:\/\/|www\.|\b[a-z0-9-]+\.(com|in|net|org|io|me|ly|gg|xyz|co)\b/i, "Links aren't allowed in random chats."],
-  [/\b\d[\d\s-]{8,}\d\b/, "Phone numbers aren't allowed in random chats."],
-  [/[\w.+-]+@[\w-]+\.[\w.]+/, "Emails aren't allowed in random chats."],
-  [/\b(nudes?|send pics|dick ?pic|horny|sex ?chat)\b/i, 'Keep it clean with strangers.'],
-];
+const LINK = /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|in|net|org|io|me|ly|gg|xyz|co)\b/i;   // random chats only
 const VIBES = [
-  ['😂', ['lol', 'lmao', 'haha', 'hehe', '😂', '🤣', '💀', 'rofl']],
-  ['😍', ['love', 'miss you', 'miss u', 'cute', '❤', '😍', '🥰']],
-  ['😢', ['sad', 'cry', 'hurt', 'lonely', '😢', '😭', '🥺']],
-  ['😡', ['angry', 'hate', 'annoying', 'ugh', '😡', '🤬']],
-  ['🔥', ['wow', 'omg', 'insane', 'crazy', 'fire', '🔥', 'yaaas']],
+  ['laugh', ['lol', 'lmao', 'haha', 'hehe', '😂', '🤣', '💀', 'rofl']],
+  ['love', ['love', 'miss you', 'miss u', 'cute', '❤', '😍', '🥰']],
+  ['sad', ['sad', 'cry', 'hurt', 'lonely', '😢', '😭', '🥺']],
+  ['angry', ['angry', 'hate', 'annoying', 'ugh', '😡', '🤬']],
+  ['hype', ['wow', 'omg', 'insane', 'crazy', 'fire', '🔥', 'yaaas']],
 ];
 
 const clean = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
@@ -48,8 +43,8 @@ export class Room {
   // ── lifecycle ────────────────────────────────────────────────────────────
   create(o) {
     const now = Date.now();
-    this.r = { code: o.code, mode: o.mode, kind: GAMES[o.kind] ? o.kind : null, rounds: o.rounds || 10,
-               users: new Map(), history: [], nextId: 0, game: null, invite: null, created: now, last: now, sparkAt: 0, timer: null };
+    this.r = { code: o.code, mode: o.mode, token: o.token || null, kind: GAMES[o.kind] ? o.kind : null, rounds: o.rounds || 10,
+               users: new Map(), history: [], nextId: 0, game: null, invite: null, created: now, last: now, timer: null };
     this.r.timer = setInterval(() => {
       const r = this.r; if (!r) return;
       const t = Date.now();
@@ -68,20 +63,20 @@ export class Room {
   send(u, o) { try { (u.ws || u).send(JSON.stringify(o)); } catch {} }
   all(o, except) { if (this.r) for (const u of this.r.users.values()) if (u !== except) this.send(u, o); }
   isRandom() { return this.r.mode === 'random' || this.r.mode === 'gamerandom'; }
-  usersView() { return [...this.r.users.values()].map(u => ({ uid: u.uid, name: u.name, emoji: u.emoji })); }
-  usersMap() { const m = {}; for (const u of this.r.users.values()) m[u.uid] = { name: u.name, emoji: u.emoji }; return m; }
+  usersView() { return [...this.r.users.values()].map(u => ({ uid: u.uid, name: u.name, av: u.av })); }
+  usersMap() { const m = {}; for (const u of this.r.users.values()) m[u.uid] = { name: u.name, av: u.av }; return m; }
   present() { return [...this.r.users.keys()]; }
   gameView() { const r = this.r; return r.game ? r.game.view(this.usersMap(), this.present()) : null; }
   pushGame() { if (this.r) this.all({ t: 'game', game: this.gameView() }); }
   vibe() {
     const tally = {};
     for (const m of this.r.history.slice(-8)) {
-      if (m.sys || m.spark) continue;
+      if (m.sys) continue;
       const t = m.text.toLowerCase();
-      for (const [e, words] of VIBES) if (words.some(w => t.includes(w))) tally[e] = (tally[e] || 0) + 1;
+      for (const [id, words] of VIBES) if (words.some(w => t.includes(w))) tally[id] = (tally[id] || 0) + 1;
     }
     const best = Object.entries(tally).sort((a, b) => b[1] - a[1])[0];
-    return best ? best[0] : '✨';
+    return best ? best[0] : 'calm';
   }
   pushHistory(m) {
     const r = this.r; m.id = ++r.nextId; m.ts = Date.now();
@@ -101,7 +96,6 @@ export class Room {
       case 'msg': return this.onChat(u, m);
       case 'typing': return this.all({ t: 'typing', uid: u.uid, name: u.name, on: !!m.on }, u);
       case 'react': return this.onReact(u, m);
-      case 'spark': return this.onSpark(u);
       case 'game_start': return this.onGameStart(u, m);
       case 'game_invite': return this.onInvite(u, m);
       case 'invite_reply': return this.onInviteReply(u, m);
@@ -121,11 +115,12 @@ export class Room {
       this.create({ code: conn.code, mode, kind: mode === 'game' ? m.kind : null, rounds: m.rounds });
     } else if (!this.r) return fail('No room with that code. Check it and try again.', 'missing');
     const r = this.r;
-    if (r.users.size >= MAX_USERS[r.mode]) return fail('That room is full.', 'full');
+    if (this.isRandom() && (!r.token || m.token !== r.token)) return fail('No room with that code. Check it and try again.', 'missing');
+    if (r.users.size >= MAX_USERS) return fail('That room already has two people.', 'full');
     let name = clean(m.name, 16) || 'Guest', n = 2;
     const taken = new Set([...r.users.values()].map(x => x.name.toLowerCase()));
     const base = name; while (taken.has(name.toLowerCase())) name = `${base} ${n++}`;
-    const u = { uid: uid8(), ws: conn.ws, name, emoji: clean(m.emoji, 8) || '😎', cid: clean(m.cid, 40), ip: conn.ip, last: 0, stamps: [] };
+    const u = { uid: uid8(), ws: conn.ws, name, av: /^a\d{1,2}$/.test(m.av) ? m.av : 'a0', cid: clean(m.cid, 40), ip: conn.ip, last: 0, stamps: [] };
     conn.uid = u.uid; r.users.set(u.uid, u); r.last = Date.now();
     this.send(u, { t: 'joined', room: r.code, mode: r.mode, kind: r.kind, you: u.uid, users: this.usersView(),
                    history: r.history, game: this.gameView(), vibe: this.vibe() });
@@ -146,7 +141,7 @@ export class Room {
     if (!r.users.size) return this.destroy();
     this.sys(`${u.name} left`);
     this.all({ t: 'users', users: this.usersView() });
-    if (r.game) { if (r.game.check(this.present()) === 'abort') { r.game = null; this.all({ t: 'toast', text: 'Game ended. You need at least 2 people.' }); } this.pushGame(); }
+    if (r.game) { if (r.game.check(this.present()) === 'abort') { r.game = null; this.all({ t: 'toast', text: 'Game ended. You need two people to play.' }); } this.pushGame(); }
   }
 
   onChat(u, m) {
@@ -156,68 +151,55 @@ export class Room {
     if (now - u.last < 250 || u.stamps.length >= 60) return;
     u.last = now; u.stamps.push(now);
     if (THREAT.test(text)) return this.send(u, { t: 'toast', text: "Not sent. Threats aren't okay here." });
-    if (this.isRandom()) for (const [re, why] of STRANGER_BLOCKS) if (re.test(text)) return this.send(u, { t: 'toast', text: `Not sent. ${why}` });
+    if (this.isRandom() && LINK.test(text)) return this.send(u, { t: 'toast', text: "Not sent. Links aren't allowed in random chats." });
     r.last = now;
-    this.pushHistory({ sid: u.uid, name: u.name, emoji: u.emoji, text, reacts: {} });
+    this.pushHistory({ sid: u.uid, name: u.name, av: u.av, text, reacts: {} });
     this.all({ t: 'vibe', vibe: this.vibe() });
   }
 
   onReact(u, m) {
     const r = this.r; if (!REACTS.includes(m.emoji)) return;
-    const msg = r.history.find(x => x.id === m.id && !x.sys && !x.spark); if (!msg) return;
+    const msg = r.history.find(x => x.id === m.id && !x.sys); if (!msg) return;
     const who = (msg.reacts[m.emoji] ||= []);
     const k = who.indexOf(u.uid); if (k >= 0) who.splice(k, 1); else who.push(u.uid);
     if (!who.length) delete msg.reacts[m.emoji];
     this.all({ t: 'reacts', id: msg.id, reacts: msg.reacts });
   }
 
-  onSpark(u) {
-    const r = this.r, now = Date.now();
-    if (now - r.sparkAt < 4000) return this.send(u, { t: 'toast', text: 'Easy! One spark at a time ✨' });
-    r.sparkAt = now; r.last = now;
-    this.pushHistory({ spark: true, by: u.name, text: ICEBREAKERS[Math.floor(Math.random() * ICEBREAKERS.length)] });
-  }
-
   // ── games ────────────────────────────────────────────────────────────────
-  allowed(kind) {
-    if (!GAMES[kind]) return 'Unknown game.';
-    if (this.isRandom() && GAMES[kind].tier === 'spicy') return 'That one is for private rooms only.';
-    return null;
-  }
   startGame(kind, rounds) {
     const r = this.r; r.last = Date.now();
     r.game = new Game(kind, this.present(), { rounds });
-    this.sys(`${GAMES[kind].name} ${GAMES[kind].emoji} started`);
+    this.sys(`${GAMES[kind].name} started`);
     this.pushGame();
   }
   onGameStart(u, m) {
-    const r = this.r, why = this.allowed(m.kind);
-    if (why) return this.send(u, { t: 'toast', text: why });
+    const r = this.r;
+    if (!GAMES[m.kind]) return this.send(u, { t: 'toast', text: 'Unknown game.' });
     if (this.isRandom()) return this.onInvite(u, m);          // strangers must agree first
     if (r.game && r.game.phase !== 'done') return this.send(u, { t: 'toast', text: 'A game is already running.' });
-    if (r.users.size < 2) return this.send(u, { t: 'toast', text: 'Invite one more person to play 👯' });
+    if (r.users.size < 2) return this.send(u, { t: 'toast', text: 'You need one more person to play.' });
     this.startGame(m.kind, m.rounds);
   }
   onInvite(u, m) {
-    const r = this.r, why = this.allowed(m.kind);
-    if (why) return this.send(u, { t: 'toast', text: why });
+    const r = this.r;
+    if (!GAMES[m.kind]) return this.send(u, { t: 'toast', text: 'Unknown game.' });
     if (r.game && r.game.phase !== 'done') return this.send(u, { t: 'toast', text: 'A game is already running.' });
     if (r.users.size < 2) return this.send(u, { t: 'toast', text: 'Waiting for someone to join first.' });
     r.invite = { kind: m.kind, rounds: m.rounds, from: u.uid };
     this.all({ t: 'invite', kind: m.kind, by: u.name, from: u.uid }, u);
-    this.send(u, { t: 'toast', text: 'Invite sent 🎮' });
+    this.send(u, { t: 'toast', text: 'Invite sent.' });
   }
   onInviteReply(u, m) {
     const r = this.r, inv = r.invite; if (!inv || inv.from === u.uid) return;
     r.invite = null;
     if (m.ok) return this.startGame(inv.kind, inv.rounds);
-    const from = r.users.get(inv.from); if (from) this.send(from, { t: 'toast', text: 'They passed on the game. Maybe later 🙃' });
+    const from = r.users.get(inv.from); if (from) this.send(from, { t: 'toast', text: 'They passed on the game for now.' });
   }
   onAnswer(u, m) {
     const g = this.r.game; if (!g) return;
     this.r.last = Date.now();
-    const res = g.submit(u.uid, m.i, m.choice, this.present());
-    this.afterGame(res);
+    this.afterGame(g.submit(u.uid, m.i, m.choice, this.present()));
   }
   onNext(u, m) {
     const g = this.r.game; if (!g) return;
@@ -225,7 +207,7 @@ export class Room {
   }
   afterGame(res) {
     const r = this.r; if (!r?.game || res === 'noop') return;
-    if (res === 'abort') { r.game = null; this.all({ t: 'toast', text: 'Game ended. You need at least 2 people.' }); }
+    if (res === 'abort') { r.game = null; this.all({ t: 'toast', text: 'Game ended. You need two people to play.' }); }
     this.pushGame();
   }
 
