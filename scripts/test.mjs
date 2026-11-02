@@ -1,6 +1,7 @@
 // End-to-end backend test. Boots `wrangler dev` locally, then drives it with real WebSockets.
 import { spawn } from 'node:child_process';
 import WebSocket from 'ws';
+import http from 'node:http';
 
 const PORT = 8799, BASE = `http://127.0.0.1:${PORT}`, WS = `ws://127.0.0.1:${PORT}`;
 let failed = 0;
@@ -55,7 +56,9 @@ const pair = async (extra = {}) => {                         // two strangers ->
   return { m1, m2, r1, r2 };
 };
 
-const dev = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--local', '--log-level', 'warn'], { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+const TG = []; const MOCK = 8797;
+http.createServer((req, res) => { let b = ''; req.on('data', d => b += d); req.on('end', () => { TG.push(JSON.parse(b || '{}')); res.setHeader('content-type', 'application/json'); res.end('{"ok":true}'); }); }).listen(MOCK);
+const dev = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--local', '--log-level', 'warn', '--var', 'TELEGRAM_CHAT_ID:42', '--var', 'TELEGRAM_API_BASE:http://127.0.0.1:' + MOCK], { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
 let logs = ''; dev.stdout.on('data', d => logs += d); dev.stderr.on('data', d => logs += d);
 for (let i = 0; i < 90; i++) { try { if ((await fetch(BASE + '/api/health')).ok) break; } catch {} await sleep(1000); }
 
@@ -154,8 +157,54 @@ try {
     await rx.wait('reported'); await ry.wait('closed'); await sleep(500);
   }
   const cool = await find({ cid: 'badguy' }); ok((await cool.wait('cooldown')).minutes > 0, '3 reports => 30 min cooldown');
+
+  console.log('typing indicator relays');
+  const ty1 = await join('TTKP', { create: true, name: 'T1' }), ty2 = await join('TTKP', { name: 'T2' }); await ty1.wait('joined'); await ty2.wait('joined');
+  ty1.send({ t: 'typing', on: true }); ok((await ty2.wait('typing', x => x.on)).name === 'T1', 'typing=on reaches the other person');
+  ty1.send({ t: 'typing', on: true }); await sleep(200); ok(ty2.msgs.filter(m => m.t === 'typing' && m.on).length >= 2, 'repeat heartbeats are relayed too');
+  ty1.send({ t: 'typing', on: false }); ok((await ty2.wait('typing', x => !x.on)).on === false, 'typing=off reaches the other person');
+
+  console.log('view-once photos');
+  const JPG = 'data:image/jpeg;base64,' + 'QUJD'.repeat(500);
+  ty1.send({ t: 'photo', data: JPG, secs: 3 });
+  const pm = await ty2.wait('msg', x => x.m.photo);
+  ok(pm.m.state === 'sent' && !pm.m.data && pm.m.secs === 3, 'photo arrives as a placeholder with no image data in it');
+  ty1.send({ t: 'photo_open', id: pm.m.id }); ok((await ty1.wait('toast', x => x.text.includes('You sent'))).text.length > 0, 'the sender cannot open their own photo');
+  ty2.send({ t: 'photo_open', id: pm.m.id });
+  const pd = await ty2.wait('photo_data'); ok(pd.data === JPG && pd.secs === 3, 'the other person receives the photo once');
+  ok((await ty1.wait('photo_state', x => x.state === 'opened')).id === pm.m.id, 'the sender is told it was opened');
+  ty2.msgs.length = 0; ty2.send({ t: 'photo_open', id: pm.m.id }); ok((await ty2.wait('toast', x => x.text.includes('gone'))).text.length > 0, 'a second open is refused: the server already deleted it');
+  ok(!!(await ty1.wait('photo_state', x => x.state === 'gone', 10000)), 'the photo is marked gone after its timer');
+  await sleep(4200); ty1.send({ t: 'photo', data: 'data:image/png;base64,AAAA', secs: 5 }); ok((await ty1.wait('toast', x => x.text.includes("couldn't"))).text.length > 0, 'non-JPEG data is rejected');
+  await sleep(4200); ty1.msgs.length = 0; ty1.send({ t: 'photo', data: 'data:image/jpeg;base64,' + 'A'.repeat(900000), secs: 5 }); await sleep(600);
+  ok(!ty1.msgs.some(m => m.t === 'msg' && m.m.photo), 'oversized photos are refused');
+  ty1.close(); ty2.close();
+
+  console.log('open chat connects to a game waiter (mixed matching)');
+  const gw = await find({ pool: 'game:same_brain', cid: 'gw-1' }), cw = await find({ cid: 'cw-1' });
+  const gm1 = await gw.wait('matched'), cm1 = await cw.wait('matched');
+  ok(gm1.room === cm1.room && gm1.invite === 'same_brain' && gm1.inviter === true && cm1.inviter === false, 'a chat waiter and a game waiter are matched; the game waiter will invite');
+  const rg = await join(gm1.room, { name: 'GW', cid: 'gw-1', token: gm1.token }), rc = await join(cm1.room, { name: 'CW', cid: 'cw-1', token: cm1.token });
+  const inv2 = await rc.wait('invite'); ok(inv2.kind === 'same_brain' && inv2.by === 'GW', 'the chat person gets the game invite as soon as both are in');
+  rc.send({ t: 'invite_reply', ok: true }); ok((await rg.wait('game', x => x.game)).game.kind === 'same_brain', 'accepting starts the game');
+  rg.close(); rc.close(); await sleep(600);
+  const h1 = await find({ pool: 'game:hot_takes', cid: 'h-1' }); await sleep(300); const h2 = await find({ pool: 'game:know_me', cid: 'h-2' });
+  const hm1 = await h1.wait('matched'), hm2 = await h2.wait('matched');
+  ok(hm1.kind === null && hm1.inviter === true && hm1.invite === 'hot_takes' && hm2.inviter === false, 'people waiting for different games match; the longer waiter invites');
+
+  console.log('suggestions -> Telegram (mocked)');
+  const post = (body, hdr = {}) => fetch(BASE + '/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json', Origin: BASE, ...hdr }, body: JSON.stringify(body) });
+  let r = await post({ kind: 'idea', message: 'Add a leaderboard please', contact: '@someone' });
+  ok(r.status === 200 && TG.length === 1 && TG[0].chat_id === '42' && TG[0].text.includes('Type: Idea') && TG[0].text.includes('Add a leaderboard') && TG[0].text.includes('@someone'), 'a suggestion is forwarded to the Telegram API with the right chat id');
+  r = await post({ kind: 'bug', message: 'bot spam', website: 'http://spam' }); ok(r.status === 200 && TG.length === 1, 'honeypot submissions are silently dropped');
+  r = await post({ kind: 'bug', message: 'hi' }); ok(r.status === 400, 'too-short messages are rejected');
+  r = await post({ kind: 'bug', message: 'valid message' }, { Origin: 'http://evil.example' }); ok(r.status === 403, 'cross-site posts are refused');
+  r = await fetch(BASE + '/api/feedback'); ok(r.status === 405, 'GET is not allowed');
+  await post({ kind: 'other', message: 'second valid one' }); await post({ kind: 'other', message: 'third valid one' });
+  r = await post({ kind: 'other', message: 'fourth valid one' }); ok(r.status === 429 && TG.length === 3, 'rate limit: 3 suggestions per 10 minutes');
+  ok(!JSON.stringify(await (await fetch(BASE + '/')).text()).includes('AAH'), 'no bot token anywhere in the served page');
 } catch (e) { failed++; console.log('  ✗ ' + e.message); }
 
-dev.kill(); if (process.platform === 'win32') spawn('taskkill', ['/pid', String(dev.pid), '/T', '/F']);
+dev.kill(); process.on('exit', () => {}); if (process.platform === 'win32') spawn('taskkill', ['/pid', String(dev.pid), '/T', '/F']);
 if (failed && logs.trim()) console.log('\n--- wrangler output ---\n' + logs.slice(-1500));
 console.log(failed ? `\n${failed} FAILED` : '\nALL PASSED'); process.exit(failed ? 1 : 0);

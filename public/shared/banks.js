@@ -831,111 +831,111 @@ export const BANK = {
 {"q":"What is a secret I've never told anyone until now?",
 "o":[
 "I don't actually like my best friend","I regret my major/career path","I am still in love with my ex","I have a secret stash of money"]},
-{"q":"Which of these have I actually done?",
+{"q":"Which wild thing have I done on a night out?",
 "o":[
-"Pretended to be sick to skip plans","Ghosted a friend","Cried at an advert","Forgot a birthday on purpose"]},
-{"q":"Which of these secrets is true?",
+"Kissed a stranger","Gone home with someone I just met","Skinny-dipped","Crashed a party I was not invited to"]},
+{"q":"What have I done about an ex?",
 "o":[
-"I have a guilty-pleasure playlist","I reread old chats","I stalked a profile at 3 am","I faked a laugh at a bad joke"]},
-{"q":"Which weird habit is mine?",
+"Stalked their profile for hours","Sent a drunk text at 3 AM","Kept their hoodie","Blocked and unblocked them ten times"]},
+{"q":"Which of these have I lied to a partner about?",
 "o":[
-"Talking to pets like people","Rehearsing conversations","Eating dessert first","Rewatching the same video daily"]},
-{"q":"What have I lied about?",
+"My past","Where I was","How much I spent","Who I was texting"]},
+{"q":"Which of these have I done at someone else's house?",
 "o":[
-"Having seen a famous movie","Being busy","Liking a gift","Knowing a song"]},
-{"q":"Which embarrassing moment is mine?",
+"Hooked up in their room","Raided their fridge secretly","Slept in a room I was not offered","Snooped through their stuff"]},
+{"q":"What is the riskiest text I have ever sent?",
 "o":[
-"Called a teacher \"mom\"","Waved at a stranger","Walked into a glass door","Texted the wrong person"]},
-{"q":"What did I do at a party?",
+"A nude","A drunk confession","\"I quit\" to my boss","\"I miss you\" to the wrong person"]},
+{"q":"Which of these have I done on a first date?",
 "o":[
-"Left without saying bye","Danced on a table","Hid in the bathroom","Fell asleep"]},
-{"q":"Which childhood story is true?",
+"Kissed them in the first hour","Gone home with them","Lied about my job","Ordered the cheapest thing to look chill"]},
+{"q":"Which of these have I faked?",
 "o":[
-"I ran away from home for an hour","I broke a window","I cheated at a game","I was the teacher's pet"]},
-{"q":"What is my most irrational fear?",
+"An orgasm","A laugh","An illness","An accent"]},
+{"q":"What is the wildest place I have fallen asleep?",
 "o":[
-"Pigeons","Escalators","Being left on read","Public speaking"]},
-{"q":"Which text have I sent?",
+"A club","Someone else's car","A stranger's couch","A public bench"]},
+{"q":"Which of these have I done while drunk?",
 "o":[
-"A long paragraph to a crush","\"Wrong person\"","A voice note while crying","A screenshot with the person in it"]},
-{"q":"What is my strange talent?",
+"Called my ex","Told someone I loved them","Got a tattoo or piercing","Spilled a big secret"]},
+{"q":"What have I done to impress a crush?",
 "o":[
-"Mimicking voices","Rolling my tongue","Folding perfect shirts","Holding my breath for ages"]},
-{"q":"What did I do at school?",
+"Lied about my age or job","Pretended to like their hobby","Spent money I did not have","Stalked their friends first"]},
+{"q":"Which of these have I never admitted to a partner?",
 "o":[
-"Bunked class","Copied homework","Got caught passing notes","Skipped an exam"]},
-{"q":"What did I do on a first date?",
+"A past hookup","A lie about money","A crush on their friend","A deleted message"]},
+{"q":"What is the worst thing I have done in a relationship?",
 "o":[
-"Left early","Paid for both","Talked about my ex","Brought a friend along"]},
-{"q":"Which lie did I tell on social media?",
+"Cheated","Read their messages","Ghosted them","Broke up over text"]},
+{"q":"Which rules have I broken at work or college?",
 "o":[
-"Posted an old photo as new","Used a fake location","Said \"no filter\"","Pretended to be at the gym"]},
-{"q":"What have I taken that was not mine?",
+"Dated a coworker or classmate","Called in fake sick","Took credit for someone's work","Drank on the job"]},
+{"q":"What have I done to avoid someone?",
 "o":[
-"A pen from a hotel","A friend's hoodie","Fries from a plate","A hotel towel"]},
-{"q":"What did I do to impress someone?",
+"Hid in a shop","Pretended to be on a call","Ghosted them for a month","Used a fake name"]},
+{"q":"Which fantasy do I actually have?",
 "o":[
-"Learned a song","Pretended to like their taste","Cooked something terrible","Fibbed about my age"]},
-{"q":"Which of these is true about my phone?",
+"Meeting a stranger abroad","Being a celebrity for a day","A secret double life","Running away to start over"]},
+{"q":"What is the most daring thing I have done for a dare?",
 "o":[
-"1000+ unread messages","A cracked screen for a year","A hidden folder of memes","Three alarms for one wake-up"]},
-{"q":"What did I last cry about?",
+"Kissed a stranger","Jumped into freezing water","Stolen a road sign","Sent my boss something silly"]},
+{"q":"What have I used a fake profile for?",
 "o":[
-"A movie","An advert","A goodbye","An exam result"]},
-{"q":"What happened on one of my road trips?",
+"Checking on an ex","Pranking a friend","Flirting","Testing someone's loyalty"]},
+{"q":"Which of these have I been caught doing?",
 "o":[
-"Got lost for hours","Ran out of fuel","Slept in the car","Sang loudly at every stop"]},
-{"q":"Which food do I regret?",
+"Sneaking out","Lying about my location","Reading a diary","Kissing someone in public"]},
+{"q":"Which of these have I done with someone I should not have?",
 "o":[
-"A street food gamble","An expired snack","A super spicy challenge","A weird combination"]},
-{"q":"What did I do at college or work?",
+"Kissed my friend's ex","Flirted with a friend's partner","Hooked up with a coworker","Dated a friend's sibling"]},
+{"q":"What have I deleted so nobody would see?",
 "o":[
-"Fell asleep in class or a meeting","Ate secretly","Sent an email to the wrong person","Left early with a fake excuse"]},
-{"q":"Which hidden talent do I have?",
+"Embarrassing texts","A drunk post","My search history","Photos with an ex"]},
+{"q":"Which lie did I keep up for years?",
 "o":[
-"Beatboxing","Solving a cube","Drawing","A second singing voice"]},
-{"q":"Which of these have I never done?",
+"My age","My relationship status","A fake achievement","\"I am fine\""]},
+{"q":"What did I do as a teenager that my parents still do not know?",
 "o":[
-"Watched a sunrise on purpose","Cooked a full meal","Swum in the sea","Missed a flight"]},
-{"q":"What was my worst haircut?",
+"Snuck out at night","Drank in secret","Skipped school","Dated in secret"]},
+{"q":"What secret side hustle have I had?",
 "o":[
-"A self-cut","A bowl cut","Way too short","The wrong colour"]},
-{"q":"What did I do instead of studying?",
+"Selling things online","Doing others' homework","Reselling tickets","Running a fake page"]},
+{"q":"What have I done to get out of trouble?",
 "o":[
-"Cleaned my room","Watched reels","Made snacks","Reorganized my notes"]},
-{"q":"What happened on one of my trips?",
+"Cried on purpose","Blamed someone else","Said my phone died","Faked a family emergency"]},
+{"q":"What have I said in a fight that I regret?",
 "o":[
-"Lost my wallet","Missed my train","Got sunburned","Made a stranger a friend"]},
-{"q":"What is my weirdest purchase?",
+"\"I never loved you\"","\"I am done\"","Something about their family","Something I cannot repeat"]},
+{"q":"What bold thing have I done in public?",
 "o":[
-"A silly gadget","Three identical items","A useless decoration","Something at midnight online"]},
-{"q":"Which crush did I have?",
+"Kissed passionately in a crowd","Danced alone in the street","Sang to a stranger","Confessed to a crush in front of everyone"]},
+{"q":"What have I done just to make someone jealous?",
 "o":[
-"A teacher","A celebrity","A friend's sibling","A classmate"]},
-{"q":"Which unpopular opinion do I secretly hold?",
+"Posted a flirty story","Danced with someone else","Mentioned an ex","Talked about a new crush"]},
+{"q":"What is the longest I have hidden a truth from a partner?",
 "o":[
-"Pineapple pizza is great","Solo trips beat group trips","Rainy days are the best","Sunday is the worst day"]},
-{"q":"Which dare would I actually do?",
+"A day","A month","A year","I still have not told them"]},
+{"q":"Which of these have I done in a hotel?",
 "o":[
-"Sing in public","Prank call someone","Wear a costume out","Eat something strange"]},
-{"q":"What did I do at a wedding?",
+"Raided the minibar","Had a very loud night","Stolen the toiletries","Broken something and left"]},
+{"q":"What have I sent to the wrong person?",
 "o":[
-"Danced too hard","Ate too much","Cried","Got lost"]},
-{"q":"How did I react to a surprise?",
+"A love message","A complaint about them","A voice note","A photo I should not have"]},
+{"q":"What have I done to get someone's attention?",
 "o":[
-"Screamed","Cried","Froze","Laughed"]},
-{"q":"Which pet peeve is mine?",
+"Faked a problem","Sent a risky snap","Showed up uninvited","Posted something vague"]},
+{"q":"What did I do after a breakup?",
 "o":[
-"Chewing sounds","Humming","Pen clicking","Slow replies"]},
-{"q":"What do I do when nobody is watching?",
+"Moved cities","Changed my whole look","Rebounded within a week","Deleted every photo"]},
+{"q":"What happened on my wildest birthday?",
 "o":[
-"Dance","Sing","Talk to myself","Raid the fridge"]},
-{"q":"Which excuse have I used to dodge plans?",
+"Lost my phone","Ended up somewhere new","Kissed someone new","Forgot half the night"]},
+{"q":"What have I done to someone's belongings?",
 "o":[
-"\"My phone died\"","\"Stuck in traffic\"","\"Not feeling well\"","\"Family thing\""]},
-{"q":"What is the silliest thing I have argued about?",
+"Borrowed and never returned","Worn without asking","Broken and hidden","Sold"]},
+{"q":"Which risky decision do I secretly regret?",
 "o":[
-"Pizza toppings","Which song is better","A movie ending","Who said what first"]}],
+"Quitting something big","Trusting the wrong person","A tattoo","An expensive purchase"]}],
 "spicy_or_sweet":[
 {"q":"What is your ultimate dynamic in the bedroom?",
 "o":[
@@ -1012,12 +1012,118 @@ export const BANK = {
 {"q":"How do you feel about aftercare?",
 "o":[
 "I need a lot of physical touch and reassurance","Just a quick cuddle is fine","I just want to sleep immediately","I prefer getting up and doing something"]},
+{"q":"How do you feel about sexting?",
+"o":[
+"Love it, the more explicit the better","Flirty only, nothing too revealing","Only with someone I deeply trust","Not for me"]},
+{"q":"What is your stance on sending nudes?",
+"o":[
+"Happy to send and receive","Only ones without my face","Never, too risky","Only on disappearing messages"]},
+{"q":"What is your favorite place in the house for intimacy?",
+"o":[
+"The bedroom, classic","The kitchen counter","The shower","The couch"]},
+{"q":"How do you feel about shower sex?",
+"o":[
+"Steamy and amazing","Looks hotter than it is","Too slippery, no thanks","I prefer a bath"]},
+{"q":"How do you like to be kissed during intimacy?",
+"o":[
+"Slow and deep","Rough and hungry","Neck and shoulders","Everywhere but the lips"]},
+{"q":"What is your stance on hickeys and marks?",
+"o":[
+"Mark me, I want proof","Light ones in hidden spots","Absolutely not","Only if I can give one back"]},
+{"q":"How do you feel about biting and scratching?",
+"o":[
+"The rougher the better","A little nibble is perfect","Only gentle","Please do not"]},
+{"q":"What is your stance on massage as foreplay?",
+"o":[
+"Essential, with oil","Nice if there is time","Too ticklish","Skip it"]},
+{"q":"How vocal do you like your partner to be?",
+"o":[
+"Tell me everything you want","Moans only","Quiet and focused","Whispering dirty things"]},
+{"q":"How much control do you want during intimacy?",
+"o":[
+"I lead the whole time","We take turns","My partner leads","Totally spontaneous"]},
+{"q":"How do you feel about quickies?",
+"o":[
+"Perfect before work","Best in risky places","I prefer taking my time","Not satisfying for me"]},
+{"q":"What is your stance on safe words and consent check-ins?",
+"o":[
+"Essential for everything","Good for trying new things","Awkward but I would do it","Never needed one"]},
+{"q":"How do you feel about watching your partner, or being watched?",
+"o":[
+"Very turned on","Curious about it","Only in the mirror","Not for me"]},
+{"q":"How do you like a night of passion to start?",
+"o":[
+"A slow dance and kisses","A text that says everything","A massage that leads somewhere","Just grabbing them"]},
+{"q":"How do you feel about switching who is usually in charge?",
+"o":[
+"I love flipping the script","Fun once in a while","I would rather keep my style","Never tried it"]},
+{"q":"What is your stance on staying half-dressed?",
+"o":[
+"Hot, leave something on","Strip everything immediately","Lingerie or underwear only","Lights off, clothes off"]},
+{"q":"How do you feel about intimacy over phone or video in long distance?",
+"o":[
+"Love it, makes the distance fun","Video only, never audio","I would rather wait","Awkward for me"]},
+{"q":"How adventurous are you with new positions?",
+"o":[
+"Always up for it","Only if I feel comfortable","I stick to favorites","I get distracted trying"]},
+{"q":"What sound or phrase turns you on most?",
+"o":[
+"My name whispered","A low voice in my ear","Heavy breathing","Praise"]},
+{"q":"How do you feel about gentle spanking?",
+"o":[
+"Yes please","Light only","Curious but nervous","No thanks"]},
+{"q":"What do you want right after?",
+"o":[
+"More cuddling","A shared shower","Snacks","Sleep right away"]},
+{"q":"How do you feel about outdoors (camping, car, rooftop)?",
+"o":[
+"Love the thrill","Only with total privacy","Scared of getting caught","Indoors only"]},
+{"q":"How do you feel about confessing your secret desires?",
+"o":[
+"I tell everything","I whisper them in the dark","Only after trust","I never tell"]},
+{"q":"How do you feel about costumes and uniforms?",
+"o":[
+"I have a costume box ready","One special outfit works","Not into costumes","Depends on the outfit"]},
+{"q":"What do you prefer: giving or receiving attention?",
+"o":[
+"Giving, I love their reactions","Receiving, it is my moment","Both equally","Depends on my mood"]},
+{"q":"How do you feel about hair pulling?",
+"o":[
+"Yes, firmly","A gentle tug only","No thanks","Only if I ask"]},
+{"q":"What is your stance on being teased all day before intimacy?",
+"o":[
+"The best foreplay","Fun but do not overdo it","Too distracting","I prefer a surprise"]},
+{"q":"How do you handle intimacy when you are tired?",
+"o":[
+"Still in if they are sweet","A morning round instead","I need my sleep","Quick, then sleep"]},
+{"q":"What is your take on trying things from adult films?",
+"o":[
+"Curious and eager","Only the realistic parts","They set false expectations","Not interested"]},
+{"q":"How do you tell your partner what you like in bed?",
+"o":[
+"Direct and honest","Hints and sounds","Hard to say out loud","A note or a text"]},
+{"q":"What is your favorite thing that is not the main event?",
+"o":[
+"Making out for hours","Teasing and touching","Massage and cuddling","Grinding while dressed"]},
+{"q":"What turns you on more?",
+"o":[
+"Their confidence","Their body","Their mind","The tension before the first touch"]},
+{"q":"How do you feel about doing it with roommates or family nearby?",
+"o":[
+"It adds to the thrill","Quiet mode only","Absolutely not","Only if the house is empty"]},
+{"q":"How do you feel about sleeping naked?",
+"o":[
+"Always","Sometimes","Never","Only in summer"]},
+{"q":"What is the best thing to hear in the middle of it?",
+"o":[
+"\"You drive me crazy\"","\"I trust you\"","\"Don't stop\"","\"You are beautiful\""]}],
+"flirt_mode":[
 {"q":"What is the best way to say \"I like you\"?",
 "o":[
 "A long stare","Playful teasing","Direct words","A surprise gift"]},
 {"q":"What is your kissing style?",
 "o":[
-"Slow and soft","Passionate","Quick peck","Playful"]},
+"Slow and soft","Passionate","A quick peck","Playful"]},
 {"q":"Lights on or off?",
 "o":[
 "Off","Dim and candlelit","On","Depends on the mood"]},
@@ -1036,9 +1142,6 @@ export const BANK = {
 {"q":"Best compliment to receive?",
 "o":[
 "Your smile","Your style","Your mind","Your vibe"]},
-{"q":"How curious are you about role-play?",
-"o":[
-"Yes please","Maybe once","It makes me cringe","Only if it is funny"]},
 {"q":"What sets the perfect mood?",
 "o":[
 "Candles and music","Rain outside","City lights at night","A cozy blanket"]},
@@ -1069,9 +1172,6 @@ export const BANK = {
 {"q":"How do you feel about pet names?",
 "o":[
 "Cute ones","Funny ones","Classic ones","Never"]},
-{"q":"Sharing a bed on the first trip together?",
-"o":[
-"Of course","Maybe","No","Separate rooms"]},
 {"q":"Midnight message: spicy or sweet?",
 "o":[
 "Spicy","Sweet","Funny","Deep"]},
@@ -1116,4 +1216,13 @@ export const BANK = {
 "Love it","Warn me first","Not in public","Depends who"]},
 {"q":"Which is more romantic?",
 "o":[
-"A handwritten letter","A playlist","A planned surprise","A spontaneous trip"]}]};
+"A handwritten letter","A playlist","A planned surprise","A spontaneous trip"]},
+{"q":"How curious are you about role-play?",
+"o":[
+"Yes please","Maybe once","It makes me cringe","Only if it is funny"]},
+{"q":"Sharing a bed on the first trip together?",
+"o":[
+"Of course","Maybe","No","Separate rooms"]},
+{"q":"Pick a love language for tonight:",
+"o":[
+"Words","Touch","Gifts","Time"]}]};

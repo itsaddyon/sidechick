@@ -2,12 +2,13 @@
 // Only the nickname and avatar are sent, and only inside a room, and only while you're in it.
 const KEY = 'sidechick.v2';
 const fresh = () => ({ name: '', av: 'a0', adult: false, cid: (crypto.randomUUID?.() || String(Math.random())).slice(0, 18),
-  streak: 0, lastDay: '', games: 0, chats: 0, badges: {}, interests: [] });
+  streak: 0, lastDay: '', games: 0, chats: 0, badges: {}, interests: [], prefs: { bg: true, haptics: true } });
 
 let data;
 try { data = { ...fresh(), ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { data = fresh(); }
 if (!/^a\d{1,2}$/.test(data.av || '')) data.av = 'a0';        // older saves used emoji avatars
 delete data.emoji;
+data.prefs = { bg: true, haptics: true, ...(data.prefs || {}) };
 export const store = data;
 export const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} };
 

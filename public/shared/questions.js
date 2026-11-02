@@ -8,6 +8,7 @@ export const GAMES = {
   know_me:            { engine: 'guess', tier: 'chill', group: 'friends', icon: 'user-round-search', theme: 'know_me',           name: 'Know Me',            pitch: 'One answers. Everyone else guesses.' },
   compatibility_quiz: { engine: 'match', tier: 'mild',  group: 'couples', icon: 'heart-handshake',  theme: 'compatibility_quiz', name: 'Compatibility Quiz', pitch: 'Deep emotional and lifestyle alignment.' },
   couple_trivia:      { engine: 'match', tier: 'mild',  group: 'couples', icon: 'target',           theme: 'couple_trivia',      name: 'Couple Trivia',      pitch: 'Basic facts and daily habits.' },
+  flirt_mode:         { engine: 'match', tier: 'mild',  group: 'couples', icon: 'heart',            theme: 'flirt_mode',         name: 'Flirt Mode',         pitch: 'Sweet, teasing and a little bold.' },
   truth_or_lie:       { engine: 'match', tier: 'spicy', group: 'couples', icon: 'drama',            theme: 'truth_or_lie',       name: 'Truth or Lie',       pitch: 'Wild confessions and secret facts.' },
   spicy_or_sweet:     { engine: 'match', tier: 'spicy', group: 'couples', icon: 'cherry',           theme: 'spicy_or_sweet',     name: 'Spicy or Sweet',     pitch: 'Strictly NSFW and intimate preferences.', nsfw: true },
 };

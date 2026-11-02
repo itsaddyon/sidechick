@@ -5,7 +5,7 @@ const NAMES = ['message-circle', 'dices', 'gamepad-2', 'lock', 'flame', 'shield-
   'arrow-left', 'arrow-right', 'heart', 'users', 'smartphone', 'link', 'copy', 'share-2', 'trophy', 'sparkles', 'moon-star', 'zap', 'music',
   'clapperboard', 'book-open', 'code-xml', 'utensils', 'plane', 'palette', 'dumbbell', 'laugh', 'user-round', 'trash-2', 'check', 'brain',
   'megaphone', 'user-round-search', 'heart-handshake', 'target', 'drama', 'cherry', 'smile', 'frown', 'angry', 'party-popper', 'sprout',
-  'hand', 'radio', 'wind', 'eye-off', 'lock-keyhole', 'refresh-cw', 'circle-help', 'info', 'plus', 'send', 'user-x', 'flame-kindling', 'waves', 'bolt', 'ghost'];
+  'hand', 'radio', 'wind', 'eye-off', 'lock-keyhole', 'refresh-cw', 'circle-help', 'info', 'plus', 'send', 'user-x', 'flame-kindling', 'waves', 'bolt', 'ghost', 'image', 'eye', 'timer', 'qr-code', 'bug', 'message-square-heart', 'download', 'external-link'];
 
 const dir = 'node_modules/lucide-static/icons/';
 const out = {}, missing = [];

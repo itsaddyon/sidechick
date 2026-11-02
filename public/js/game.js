@@ -94,8 +94,42 @@ function doneView(g, ctx) {
       h('button', { class: 'btn ghost', onclick: () => ctx.end() }, ctx.exitLabel || 'Done')));
 }
 
+/** A shareable picture of the result, drawn in the current game's colours and font. */
+async function resultCard(g) {
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
+  const x = c.getContext?.('2d'); if (!x) return null;
+  const cs = getComputedStyle(document.body), v = n => cs.getPropertyValue(n).trim();
+  const bg = v('--bg') || '#0E0D12', ac = v('--accent') || '#FF5B3A';
+  x.fillStyle = bg; x.fillRect(0, 0, 1080, 1350);
+  for (const [px, py, col, a] of [[0, 0, v('--b1') || ac, 0.5], [1080, 640, v('--b2') || ac, 0.35], [200, 1350, v('--b3') || ac, 0.3]]) {
+    const gr = x.createRadialGradient(px, py, 0, px, py, 900); gr.addColorStop(0, col); gr.addColorStop(1, 'transparent');
+    x.globalAlpha = a; x.fillStyle = gr; x.fillRect(0, 0, 1080, 1350); x.globalAlpha = 1;
+  }
+  const pctEl = document.querySelector('.pct'), ps = pctEl ? getComputedStyle(pctEl) : null;
+  const display = ps ? `${ps.fontStyle} ${ps.fontWeight} ${'%SIZE%'} ${ps.fontFamily}` : '800 %SIZE% sans-serif';
+  x.textAlign = 'center'; x.fillStyle = '#F6F1E7'; x.font = '700 48px sans-serif'; x.fillText(g.title.toUpperCase(), 540, 150);
+  x.fillStyle = ac; x.font = display.replace('%SIZE%', '560px'); x.fillText(`${g.result.pct}%`, 540, 760);
+  x.fillStyle = '#F6F1E7'; x.font = display.replace('%SIZE%', '68px');
+  let line = '', y = 900;
+  for (const wd of g.result.verdict.split(' ')) { const t = line ? line + ' ' + wd : wd; if (x.measureText(t).width > 880 && line) { x.fillText(line, 540, y); y += 80; line = wd; } else line = t; }
+  x.fillText(line, 540, y);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = '/logo.svg'; });
+    const w = 440, hgt = w * img.height / img.width; x.drawImage(img, 540 - w / 2, 1180, w, hgt);
+  } catch {}
+  x.fillStyle = 'rgba(246,241,231,.6)'; x.font = '500 34px sans-serif'; x.fillText(location.host, 540, 1290);
+  return new Promise(r => c.toBlob(r, 'image/png'));
+}
+
 export async function shareResult(g) {
   const text = `We got ${g.result.pct}% on ${g.title}: ${g.result.verdict}.\nPlay with me on Sidechick:`;
+  try {
+    const blob = await resultCard(g);
+    if (blob && navigator.canShare) {
+      const file = new File([blob], 'sidechick-result.png', { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: `${text} ${location.origin}` }); return; }
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
   await share({ text, url: location.origin });
 }
 

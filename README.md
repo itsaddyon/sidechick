@@ -10,13 +10,13 @@ Made by [itsaddyon](https://github.com/itsaddyon) (A²).
 |---|---|
 | **Meet someone new** | Omegle-style random chat. Optional interests match you faster. Skip, report, or turn the chat into a game. |
 | **Play a game** | No chatting needed. Play with a friend (link), a random stranger, or on one phone (pass and play). |
-| **Private room** | Share a 4-letter code or link. Chat, react, play. |
+| **Private room** | Share a 4-letter code or link. Chat, react, play, and send view-once photos. |
 | **Small hooks** | Daily streak, badges, question of the day, icebreaker bulb. All stored on the user's device only. |
 
-**Games (7, 40 to 60 questions each, 10 per round by default):** Same Brain?, Hot Takes, Know Me, Compatibility Quiz, Couple Trivia, Truth or Lie, Spicy or Sweet (18+).
+**Games (8, 36 to 60 questions each, 10 per round by default):** Same Brain?, Hot Takes, Know Me, Compatibility Quiz, Couple Trivia, Flirt Mode, Truth or Lie, Spicy or Sweet (18+).
 The couple packs started as the v1 questions, unchanged, with new ones added. Add your own in `public/shared/banks.js`.
 
-**Every room holds exactly two people.** Random chats block threats and links, nothing else. Spicy games work with strangers, but the other person has to accept the invite first.
+**Every room holds exactly two people.** Random chats block threats and links, nothing else. Anyone waiting can be matched with anyone: if one person queued for a game and the other for plain chat, the game person invites the other as soon as they are both in. Spicy games work with strangers, but the other person has to accept the invite first.
 
 Each game has its own mood: colours, background and display font change per game (see `body[data-theme]` in `public/css/style.css`).
 
@@ -28,6 +28,7 @@ npm run dev                 # http://localhost:8787
 npm test                    # backend end-to-end + UI click-through (boots a local server)
 npm run build:brand         # regenerate logo, favicon, app icons and the social preview
 npm run build:icons         # regenerate public/js/icons.js from lucide-static
+npm run telegram:setup      # finds your Telegram chat id for the suggestion box (see below)
 ```
 
 ## Deploy (Cloudflare, free, no sleeping)
@@ -42,6 +43,20 @@ npm run deploy              # https://sidechick.<you>.workers.dev
 Optional: `npx wrangler secret put SALT` for the anonymous IP hash.
 
 **Free plan (Workers Free):** 100,000 requests/day and 13,000 GB-s of Durable Object time/day, roughly 25 to 30 live room-hours a day. Rooms auto-close after 10 idle minutes (3 hours max). Workers Paid is $5/month if you outgrow it.
+
+## Suggestion box (Telegram)
+
+The in-app "Suggest something" form posts to `/api/feedback`. The Worker forwards it to your Telegram bot with `sendMessage`. The bot token stays on the server: it is never sent to the browser and never committed.
+
+1. Open your bot in Telegram, press Start, send "hi".
+2. `npm run telegram:setup` finds your chat id and writes both values to `.dev.vars` (gitignored) for local runs.
+3. For the live site: `npx wrangler secret put TELEGRAM_BOT_TOKEN` and `npx wrangler secret put TELEGRAM_CHAT_ID`.
+
+Spam protection: a hidden honeypot field, same-site only, and 3 suggestions per 10 minutes per visitor.
+
+## View-once photos
+
+Private rooms only. The photo is shrunk and re-encoded in the browser (this also strips location data), held in the Durable Object's memory until the other person opens it, sent to them once, and deleted. The viewer hides the photo when the screen loses focus, blocks the usual screenshot keys and right-click, and tiles the viewer's name over it. No website can truly block a screenshot, so the app says so.
 
 ## SEO
 

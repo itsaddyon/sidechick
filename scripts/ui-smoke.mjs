@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { JSDOM } from 'jsdom';
 import WebSocket from 'ws';
 import fs from 'node:fs';
+import http from 'node:http';
 
 const PORT = 8798, BASE = `http://127.0.0.1:${PORT}`, WSB = `ws://127.0.0.1:${PORT}`;
 let failed = 0;
@@ -19,7 +20,9 @@ function bot(path) {
   return b;
 }
 
-const dev = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--local', '--log-level', 'warn'], { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+const TG = []; const MOCK = 8796;
+http.createServer((req, res) => { let b = ''; req.on('data', d => b += d); req.on('end', () => { TG.push(JSON.parse(b || '{}')); res.setHeader('content-type', 'application/json'); res.end('{"ok":true}'); }); }).listen(MOCK);
+const dev = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--local', '--log-level', 'warn', '--var', 'TELEGRAM_CHAT_ID:42', '--var', 'TELEGRAM_API_BASE:http://127.0.0.1:' + MOCK], { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
 for (let i = 0; i < 90; i++) { try { if ((await fetch(BASE + '/api/health')).ok) break; } catch {} await sleep(1000); }
 
 const html = fs.readFileSync('public/index.html', 'utf8').replace(/<script type="module"[\s\S]*?<\/script>/g, '').replaceAll('__ORIGIN__', BASE);
@@ -42,7 +45,11 @@ try {
   await import('../public/js/app.js');
   await waitFor('.onboard', 3000, 'onboarding');
   ok($$('.avatar-grid button').length === 12 && $$('.avatar-grid svg').length === 12, 'onboarding shows 12 illustrated avatars');
-  ok(!!$('.onboard .logo-img') && !!$('.onboard .credit') && $('.credit').textContent.includes('itsaddyon') && $('.credit').getAttribute('href') === 'https://github.com/itsaddyon', 'logo + A2 credit on the first page');
+  ok(!!$('.onboard .logo-img') && !!$('.onboard .credit') && !!$('.onboard .credit .mono') && $('.credit').textContent.includes('itsaddyon'), 'logo + animated A2 credit on the first page');
+  click($('.onboard .credit')); await waitFor('.sheet .madeby', 2000, 'made-by card');
+  ok($('.sheet a[href="https://github.com/itsaddyon"]') && $('.sheet').textContent.includes('Send a suggestion'), 'tapping the credit opens a card with GitHub + suggestion button');
+  click($('.sheet .btn.ghost'));
+  ok($$('.floaters .fl').length === 16, 'animated background: 16 floating icons');
   noEmoji('.onboard', 'onboarding');
   click($$('.avatar-grid button')[4]); $('.onboard input').value = 'Tester';
   click($('.onboard .btn.big'));
@@ -56,8 +63,23 @@ try {
   console.log('privacy sheet');
   click($('.home .foot-row .link')); await waitFor('.sheet .pv', 2000, 'privacy');
   const pv = $('.sheet').textContent;
-  ok(pv.includes('Two people per room') && pv.includes('Spicy games') && pv.includes('threats') && pv.includes('streak is just a counter'), 'privacy text covers 2-person rooms, spicy games, filters, streak');
+  ok(pv.includes('Two people per room') && pv.includes('Spicy games') && pv.includes('threats') && pv.includes('streak is just a counter') && pv.includes('View-once photos') && pv.includes('Suggestions'), 'privacy text covers 2-person rooms, spicy games, filters, streak, photos, suggestions');
   noEmoji('.sheet', 'privacy sheet'); click($('.sheet .btn.big'));
+
+  console.log('suggestions (UI -> Worker -> Telegram mock)');
+  click($$('.home .foot-row .link')[1]); await waitFor('.sheet textarea', 2000, 'feedback sheet');
+  ok($$('.sheet .chips-wrap .chip').length === 4 && !!$('.sheet .hp'), 'feedback sheet: 4 types + hidden honeypot');
+  click($$('.sheet .chips-wrap .chip')[1]); $('.sheet textarea').value = 'The compatibility quiz should have a timer';
+  click($$('.sheet .btn.big').pop());
+  await waitFor('.sheet .center', 5000, 'feedback sent'); ok($('.sheet').textContent.includes('Sent. Thank you.'), 'thank-you shown after sending');
+  ok(TG.length === 1 && TG[0].text.includes('Type: Bug') && TG[0].text.includes('compatibility quiz') && TG[0].chat_id === '42', 'the Worker forwarded it to Telegram');
+  click($('.sheet .btn.big'));
+  console.log('your stuff: settings toggles');
+  click($('.avatar-btn')); await waitFor('.sheet .switch', 2000, 'stuff sheet');
+  const sw = $$('.sheet .switch input'); ok(sw.length === 2, 'two switches (animated background, vibration)');
+  sw[0].checked = false; sw[0].dispatchEvent(new w.Event('change', { bubbles: true })); ok(document.body.classList.contains('calm') && store().prefs.bg === false, 'turning the background off applies instantly and is remembered');
+  sw[0].checked = true; sw[0].dispatchEvent(new w.Event('change', { bubbles: true })); ok(!document.body.classList.contains('calm'), 'and back on');
+  click($('.sheet .btn.big')); await waitFor('.tile', 2000, 'home after save');
 
   console.log('private room (UI <-> bot)');
   click($$('.tile')[2]);
@@ -78,6 +100,27 @@ try {
   await waitFor(() => $('.reacts button'), 3000, 'reaction'); ok(true, 'reaction rendered');
   await waitFor(() => $('.vibe .ic'), 2000, 'vibe icon'); ok(true, 'room vibe shown as an icon');
 
+  console.log('typing indicator stays on while someone keeps typing');
+  f.msgs.length = 0;
+  for (let i = 0; i < 10; i++) { $('.composer input').value = 'typing ' + i; $('.composer input').dispatchEvent(new w.Event('input', { bubbles: true })); await sleep(480); }
+  ok(f.msgs.filter(m => m.t === 'typing' && m.on).length >= 2, 'while you type, the other person keeps getting "typing" heartbeats (' + f.msgs.filter(m => m.t === 'typing' && m.on).length + ' in 4.8s)');
+  $('.composer input').value = '';
+  for (let i = 0; i < 4; i++) { f.send({ t: 'typing', on: true }); await sleep(2000); }
+  ok($('.typing').textContent.includes('Bot is typing'), 'the indicator is still showing after 8s of them typing');
+  f.send({ t: 'typing', on: false }); await waitFor(() => $('.typing').textContent === '', 2000, 'typing off'); ok(true, 'and it clears as soon as they stop');
+
+  console.log('view-once photos in the UI');
+  ok(!!$('.composer button[aria-label="Send a view-once photo"]'), 'photo button is available in a private room');
+  const JPG = 'data:image/jpeg;base64,' + 'QUJD'.repeat(400);
+  f.send({ t: 'photo', data: JPG, secs: 3 });
+  const pc = await waitFor(() => $$('.photo-card').find(b => !b.disabled), 4000, 'photo card'); ok(pc.textContent.includes('Tap to view once'), 'incoming photo shows as a tap-to-view card (no image in the chat)');
+  click(pc); await waitFor('.viewer img', 3000, 'viewer');
+  ok($('.viewer img').getAttribute('src') === JPG && $('.viewer .wm').getAttribute('style').includes('data:image/svg+xml') && $('.viewer').textContent.includes('Gone after this'), 'viewer shows the photo with a name watermark and a countdown');
+  w.dispatchEvent(new w.Event('blur')); await waitFor(() => !$('.viewer'), 1000, 'viewer closed on blur');
+  ok(true, 'leaving the screen closes the viewer immediately');
+  await waitFor(() => $$('.photo-card').some(b => b.textContent.includes('You opened it')), 2000, 'opened state'); ok(true, 'the card now says "You opened it" and cannot be opened again');
+
+
   console.log('icebreaker bulb fills the box, send is manual');
   const before = f.msgs.filter(m => m.t === 'msg').length;
   $('.composer input').value = ''; click($('.composer .spark'));
@@ -88,7 +131,7 @@ try {
 
   console.log('game in room (with mismatches)');
   click($('.composer .icon-btn')); await waitFor('.sheet .gcard', 2000, 'picker');
-  ok($$('.sheet .gcard').length === 7 && $$('.sheet .gcard .icon-box svg').length === 7, 'picker lists all 7 games with icons');
+  ok($$('.sheet .gcard').length === 8 && $$('.sheet .gcard .icon-box svg').length === 8, 'picker lists all 8 games with icons');
   click($$('.sheet .gcard')[0]);
   await waitFor('.game', 3000, 'game'); ok(document.body.dataset.theme === 'same_brain', 'screen theme switches to the game mood');
   let done = false, sawDifferent = false, bad = false;
@@ -119,7 +162,7 @@ try {
   click($('.top .icon-btn')); await waitFor('.tile', 3000, 'home again');
   ok(!!$('.chip.fire'), 'streak chip now shows on home');
   click($$('.tile')[1]); await waitFor('.gcard', 2000, 'games hub');
-  ok($$('.gcard').length === 7 && $$('.tag18').length >= 1, 'games hub lists 7 games, 18+ tag shown');
+  ok($$('.gcard').length === 8 && $$('.tag18').length >= 1, 'games hub lists 8 games (incl. Flirt Mode), 18+ tag shown');
   noEmoji('.screen.sub', 'games hub');
   click($$('.gcard')[3]);
   await waitFor('.sheet .mode', 2000, 'mode sheet'); ok($$('.sheet .gcard').length === 3 && !!$('.toggle'), 'mode sheet: friend / stranger / same phone + full-set toggle');
@@ -141,6 +184,7 @@ try {
   await waitFor('.splash', 4000, 'match splash'); ok($('.splash h2').textContent.includes('connected'), 'match splash shown');
   const sr = bot('/ws/room/' + mm.room); await sr.open; sr.send({ t: 'join', name: 'Stranger', av: 'a9', adult: true, cid: 'bot-stranger', token: mm.token }); await sr.wait('joined');
   await waitFor('.peer b', 5000, 'random room'); ok($('.peer b').textContent === 'Stranger' && !!$('.top .btn.small'), 'random chat shows peer + Next button');
+  ok(!$('.composer button[aria-label="Send a view-once photo"]'), 'no photo button in random chats');
   sr.send({ t: 'msg', text: 'yo' }); await waitFor(() => $$('.bubble').some(b => b.textContent === 'yo'), 4000, 'stranger msg'); ok(true, 'stranger message rendered');
   sr.send({ t: 'game_start', kind: 'spicy_or_sweet' });
   await waitFor('.sheet .mode.center', 3000, 'invite'); ok($('.sheet').textContent.includes('18+ and spicy'), 'spicy invite from a stranger is flagged 18+ and can be declined');

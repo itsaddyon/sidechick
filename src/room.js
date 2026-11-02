@@ -6,6 +6,7 @@ import { GAMES } from '../public/shared/questions.js';
 const MAX_USERS = 2;
 const IDLE_MS = 10 * 60 * 1000, MAX_LIFE_MS = 3 * 60 * 60 * 1000, EMPTY_MS = 60 * 1000;
 const MAX_HISTORY = 120, REACTS = ['❤️', '😂', '🔥', '👍', '😮'];
+const PHOTO_PREFIX = 'data:image/jpeg;base64,', PHOTO_MAX = 800_000, PHOTO_UNOPENED_MS = 10 * 60 * 1000, MAX_PENDING_PHOTOS = 4;
 
 const THREAT = /\b(i('ll| will) kill you|kill yourself|kys|i know where you live|i will find you|rape you)\b/i;
 const LINK = /https?:\/\/|www\.|\b[a-z0-9-]+\.(com|in|net|org|io|me|ly|gg|xyz|co)\b/i;   // random chats only
@@ -44,17 +45,19 @@ export class Room {
   create(o) {
     const now = Date.now();
     this.r = { code: o.code, mode: o.mode, token: o.token || null, kind: GAMES[o.kind] ? o.kind : null, rounds: o.rounds || 10,
-               users: new Map(), history: [], nextId: 0, game: null, invite: null, created: now, last: now, timer: null };
+               autoInvite: GAMES[o.invite?.kind] ? o.invite : null,          // { kind, cid }: a waiting stranger asked for a game
+               users: new Map(), history: [], photos: new Map(), nextId: 0, game: null, invite: null, created: now, last: now, timer: null };
     this.r.timer = setInterval(() => {
       const r = this.r; if (!r) return;
       const t = Date.now();
-      if ((!r.users.size && t - r.created > EMPTY_MS) || t - r.last > IDLE_MS || t - r.created > MAX_LIFE_MS) this.destroy('Room closed.');
+      if ((!r.users.size && t - r.created > EMPTY_MS) || t - r.last > IDLE_MS || t - r.created > MAX_LIFE_MS) return this.destroy('Room closed.');
+      for (const [id, p] of r.photos) if (p.data && t - p.at > PHOTO_UNOPENED_MS) this.setPhotoState(id, 'gone');
     }, 15000);
   }
 
   destroy(text) {
     const r = this.r; if (!r) return;
-    clearInterval(r.timer);
+    clearInterval(r.timer); r.photos.clear();
     for (const u of r.users.values()) { this.send(u, { t: 'closed', text }); try { u.ws.close(1000, 'closed'); } catch {} }
     this.r = null;
   }
@@ -71,7 +74,7 @@ export class Room {
   vibe() {
     const tally = {};
     for (const m of this.r.history.slice(-8)) {
-      if (m.sys) continue;
+      if (m.sys || m.photo) continue;
       const t = m.text.toLowerCase();
       for (const [id, words] of VIBES) if (words.some(w => t.includes(w))) tally[id] = (tally[id] || 0) + 1;
     }
@@ -82,13 +85,15 @@ export class Room {
     const r = this.r; m.id = ++r.nextId; m.ts = Date.now();
     r.history.push(m); if (r.history.length > MAX_HISTORY) r.history.shift();
     this.all({ t: 'msg', m });
+    return m;
   }
   sys(text) { if (this.r && !this.isRandom()) this.pushHistory({ sys: true, text }); }
 
   // ── incoming ─────────────────────────────────────────────────────────────
   onMessage(conn, raw) {
-    if (typeof raw !== 'string' || raw.length > 4000) return;
+    if (typeof raw !== 'string' || raw.length > 1_000_000) return;
     let m; try { m = JSON.parse(raw); } catch { return; }
+    if (raw.length > 4000 && m.t !== 'photo') return;
     if (m.t === 'ping') return this.send(conn, { t: 'pong' });
     if (!conn.uid) return m.t === 'join' ? this.onJoin(conn, m) : undefined;
     const r = this.r; const u = r?.users.get(conn.uid); if (!u) return;
@@ -96,6 +101,8 @@ export class Room {
       case 'msg': return this.onChat(u, m);
       case 'typing': return this.all({ t: 'typing', uid: u.uid, name: u.name, on: !!m.on }, u);
       case 'react': return this.onReact(u, m);
+      case 'photo': return this.onPhoto(u, m);
+      case 'photo_open': return this.onPhotoOpen(u, m);
       case 'game_start': return this.onGameStart(u, m);
       case 'game_invite': return this.onInvite(u, m);
       case 'invite_reply': return this.onInviteReply(u, m);
@@ -120,13 +127,18 @@ export class Room {
     let name = clean(m.name, 16) || 'Guest', n = 2;
     const taken = new Set([...r.users.values()].map(x => x.name.toLowerCase()));
     const base = name; while (taken.has(name.toLowerCase())) name = `${base} ${n++}`;
-    const u = { uid: uid8(), ws: conn.ws, name, av: /^a\d{1,2}$/.test(m.av) ? m.av : 'a0', cid: clean(m.cid, 40), ip: conn.ip, last: 0, stamps: [] };
+    const u = { uid: uid8(), ws: conn.ws, name, av: /^a\d{1,2}$/.test(m.av) ? m.av : 'a0', cid: clean(m.cid, 40), ip: conn.ip, last: 0, lastPhoto: 0, stamps: [] };
     conn.uid = u.uid; r.users.set(u.uid, u); r.last = Date.now();
     this.send(u, { t: 'joined', room: r.code, mode: r.mode, kind: r.kind, you: u.uid, users: this.usersView(),
-                   history: r.history, game: this.gameView(), vibe: this.vibe() });
+                   history: r.history, game: this.gameView(), vibe: this.vibe(), photos: !this.isRandom() });
     this.all({ t: 'users', users: this.usersView() });
     this.sys(`${name} joined`);
     if (!r.game && r.kind && r.users.size >= 2 && (r.mode === 'game' || r.mode === 'gamerandom')) this.startGame(r.kind, r.rounds);
+    else if (r.autoInvite && r.users.size >= 2 && !r.game) {
+      const from = [...r.users.values()].find(x => x.cid && x.cid === r.autoInvite.cid), to = [...r.users.values()].find(x => x !== from);
+      if (from && to) { r.invite = { kind: r.autoInvite.kind, rounds: 10, from: from.uid }; this.send(to, { t: 'invite', kind: r.autoInvite.kind, by: from.name, from: from.uid }); this.send(from, { t: 'toast', text: 'Game invite sent.' }); }
+      r.autoInvite = null;
+    }
   }
 
   onClose(conn) {
@@ -164,6 +176,38 @@ export class Room {
     const k = who.indexOf(u.uid); if (k >= 0) who.splice(k, 1); else who.push(u.uid);
     if (!who.length) delete msg.reacts[m.emoji];
     this.all({ t: 'reacts', id: msg.id, reacts: msg.reacts });
+  }
+
+  // ── view-once photos (private rooms only) ────────────────────────────────
+  // The picture lives in memory until the other person opens it, is sent to them once, then is deleted here.
+  onPhoto(u, m) {
+    const r = this.r, now = Date.now();
+    if (this.isRandom()) return this.send(u, { t: 'toast', text: 'Photos are only available in private rooms.' });
+    if (r.users.size < 2) return this.send(u, { t: 'toast', text: 'Wait for the other person to join first.' });
+    const data = String(m.data || '');
+    if (!data.startsWith(PHOTO_PREFIX) || data.length > PHOTO_MAX || !/^[A-Za-z0-9+/=]+$/.test(data.slice(PHOTO_PREFIX.length)))
+      return this.send(u, { t: 'toast', text: "That photo couldn't be sent." });
+    if (now - u.lastPhoto < 4000) return this.send(u, { t: 'toast', text: 'One photo at a time.' });
+    if ([...r.photos.values()].filter(p => p.data).length >= MAX_PENDING_PHOTOS) return this.send(u, { t: 'toast', text: 'Too many unopened photos. Let them look first.' });
+    u.lastPhoto = now; r.last = now;
+    const secs = Math.min(30, Math.max(3, Math.round(Number(m.secs)) || 10));
+    const msg = this.pushHistory({ photo: true, sid: u.uid, name: u.name, av: u.av, state: 'sent', secs, reacts: {} });
+    r.photos.set(msg.id, { from: u.uid, data, secs, at: now });
+  }
+  onPhotoOpen(u, m) {
+    const r = this.r, p = r.photos.get(m.id);
+    if (!p || !p.data) return this.send(u, { t: 'toast', text: 'That photo is gone.' });
+    if (p.from === u.uid) return this.send(u, { t: 'toast', text: 'You sent this one. Only they can open it.' });
+    this.send(u, { t: 'photo_data', id: m.id, data: p.data, secs: p.secs });
+    p.data = null;                                            // delete our copy right now
+    this.setPhotoState(m.id, 'opened');
+    setTimeout(() => this.setPhotoState(m.id, 'gone'), (p.secs + 4) * 1000);
+  }
+  setPhotoState(id, state) {
+    const r = this.r; if (!r) return;
+    const msg = r.history.find(x => x.id === id); if (msg) msg.state = state;
+    if (state === 'gone') { const p = r.photos.get(id); if (p) p.data = null; r.photos.delete(id); }
+    this.all({ t: 'photo_state', id, state });
   }
 
   // ── games ────────────────────────────────────────────────────────────────
