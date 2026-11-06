@@ -142,9 +142,11 @@ try {
   const t0 = Date.now();
   const i1 = await find({ interests: ['Music'] }), i2 = await find({ interests: ['Music', 'Gaming'] });
   const im = await i1.wait('matched'); ok(im.shared.includes('Music') && Date.now() - t0 < 5000, 'shared interest matches immediately');
-  await i2.wait('matched');
+  await i2.wait('matched'); i1.close(); i2.close(); await sleep(200);
+  const t1 = Date.now();
   const p1 = await find({ interests: ['Movies'] }), p2 = await find({ interests: ['Cricket'] });
-  await p1.wait('matched', null, 15000); ok(Date.now() - t0 > 5000, 'no overlap: waits, then matches anyone (patience)'); await p2.wait('matched');
+  await p1.wait('matched', null, 15000); ok(Date.now() - t1 >= 4500, 'no overlap: waits, then matches anyone (patience)');
+  await p2.wait('matched', null, 15000); p1.close(); p2.close(); await sleep(200);
   const c1 = await find(); await sleep(300); ok((await (await fetch(BASE + '/api/stats')).json()).waiting === 1, 'stats show 1 waiting');
   c1.send({ t: 'cancel' }); await sleep(300); ok((await (await fetch(BASE + '/api/stats')).json()).waiting === 0, 'cancel leaves the queue');
 
