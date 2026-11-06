@@ -73,7 +73,8 @@ function openFeedback() {
     try {
       const r = await fetch(backend() + '/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind, message: text, contact: contact.value.trim(), website: trap.value }) });
       if (r.ok) { box.replaceChildren(iconBox('check', 34, 'lg'), h('h3', {}, 'Sent. Thank you.'), h('p', { class: 'sub' }, 'Every suggestion gets read.'), h('button', { class: 'btn big', onclick: () => s.close() }, 'Done')); box.classList.add('center'); award('inviter'); return; }
-      note.textContent = r.status === 503 ? "Suggestions aren't switched on yet." : r.status === 429 ? 'Easy there. Try again in a few minutes.' : "Couldn't send. Try again.";
+      const data = await r.json().catch(() => ({}));
+      note.textContent = r.status === 503 ? "Suggestions aren't switched on yet." : r.status === 429 ? 'Easy there. Try again in a few minutes.' : (data.details ? `Telegram: ${data.details}` : "Couldn't send. Try again.");
     } catch { note.textContent = "Couldn't reach the server. Try again."; }
     send.disabled = false;
   } }, icon('send', 18), 'Send');

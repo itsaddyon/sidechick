@@ -73,8 +73,12 @@ async function feedback(request, env, url, cors = {}) {
   try {
     const r = await fetch(`${env.TELEGRAM_API_BASE || 'https://api.telegram.org'}/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }) });
-    return r.ok ? json({ ok: true }, 200, cors) : json({ error: 'upstream' }, 502, cors);
-  } catch { return json({ error: 'upstream' }, 502, cors); }
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      return json({ error: 'upstream', details: err.description || 'telegram_rejected' }, 502, cors);
+    }
+    return json({ ok: true }, 200, cors);
+  } catch (e) { return json({ error: 'upstream', details: e.message }, 502, cors); }
 }
 
 export default {
