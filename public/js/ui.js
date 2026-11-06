@@ -140,12 +140,15 @@ export function initBackdrop() {
   const cur = document.body.dataset.brand || 'twilight';
   paintFloaters(document.body.dataset.theme === 'brand' || !document.body.dataset.theme ? cur : document.body.dataset.theme);
   let raf = 0;
-  const move = e => {                                         // a soft glow follows your finger or cursor
-    const p = e.touches ? e.touches[0] : e; if (!p) return;
+  const move = e => {                                         // a soft glow follows cursor on desktop
+    if (e.pointerType === 'touch') return;                    // skip on mobile touch to keep scrolling 120fps
     cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => { document.body.style.setProperty('--mx', p.clientX + 'px'); document.body.style.setProperty('--my', p.clientY + 'px'); });
+    raf = requestAnimationFrame(() => {
+      document.body.style.setProperty('--mx', e.clientX + 'px');
+      document.body.style.setProperty('--my', e.clientY + 'px');
+    });
   };
-  window.addEventListener('pointermove', move, { passive: true }); window.addEventListener('touchmove', move, { passive: true });
+  window.addEventListener('pointermove', move, { passive: true });
 }
 
 let toastT;
