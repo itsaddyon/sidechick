@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Private rooms, random chats and quick games. Nothing is stored.",
   "scripts": {
+    "build": "echo ok",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "build:brand": "node scripts/build-brand.mjs",
