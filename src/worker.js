@@ -109,14 +109,14 @@ export default {
         { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
     if (p === '/') {                                           // fill in absolute URLs for canonical + social previews
       const res = await env.ASSETS.fetch(request);
-      const html = (await res.text()).replaceAll('__ORIGIN__', url.origin);
+      const html = (await res.text()).replaceAll('https://sidechicks.vercel.app', url.origin).replaceAll('__ORIGIN__', url.origin);
       return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300', ...SECURITY } });
     }
     const res = await env.ASSETS.fetch(request);
     if (res.status === 404) {
       const page404 = await env.ASSETS.fetch(new Request(new URL('/404.html', request.url), request));
       const raw = page404.ok ? await page404.text() : await res.text();
-      const html = raw.replaceAll('__ORIGIN__', url.origin);
+      const html = raw.replaceAll('https://sidechicks.vercel.app', url.origin).replaceAll('__ORIGIN__', url.origin);
       return new Response(html, {
         status: 404,
         headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache, no-store', ...SECURITY },
