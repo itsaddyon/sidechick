@@ -31,7 +31,7 @@ const applyPrefs = () => {
   applyBrandTheme(currentBrandTheme());
 };
 
-const logo = () => h('img', { class: 'logo-img', src: '/logo.svg', alt: 'Sidechick', height: 30 });
+const logo = () => h('div', { class: 'brand-badge' }, h('img', { class: 'logo-img', src: '/logo.svg', alt: 'Sidechick', height: 30 }), h('span', { class: 'tag-beta' }, 'BETA'));
 const backBtn = fn => h('button', { class: 'back', 'aria-label': 'Back', onclick: () => fn() }, icon('arrow-left', 20));
 const tag18 = () => h('span', { class: 'tag18' }, '18+');
 const link = () => `${location.origin}/?r=${R.code}`;
@@ -169,6 +169,7 @@ function home() {
     tile('', 'lock', 'Private room', 'Just you and one other person.', () => joinRoom(newCode(), { create: true })),
     h('form', { class: 'code-row', onsubmit: e => { e.preventDefault(); joinByCode(code.value); } }, code, h('button', { class: 'btn line' }, 'Join')),
     qotd(),
+    h('div', { class: 'beta-notice' }, h('span', { class: 'beta-dot' }), 'Public Beta · Feedback welcome'),
     h('div', { class: 'foot-row' }, h('div', { class: 'links' },
       h('button', { class: 'link', onclick: openPrivacy }, icon('shield-check', 14), 'Privacy'),
       h('button', { class: 'link', onclick: openFeedback }, icon('lightbulb', 14), 'Suggest something')), credit()))));

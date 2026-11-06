@@ -396,9 +396,14 @@ input::placeholder{color:var(--mute)}
 .mono.xl sup{font-size:22px;top:-13px;margin-left:3px}
 .who-big{font-family:var(--display);font-size:34px;letter-spacing:-.03em;text-transform:var(--dcase)}
 .madeby{gap:12px}
-.foot-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:10px;flex-wrap:wrap}
-.onboard .foot-row{margin-top:6px}
-.foot-row .links{display:flex;gap:2px;flex-wrap:wrap}
+.brand-badge{display:inline-flex;align-items:center;gap:8px}
+.tag-beta{font-size:10px;font-weight:800;letter-spacing:.08em;background:rgba(255,255,255,.08);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:1px 6px;text-transform:uppercase;line-height:1.2}
+.beta-notice{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);font-weight:600;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:4px 12px;border-radius:999px;margin:2px auto}
+.beta-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.8s infinite}
+.foot-row{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin-top:auto;padding-top:14px;width:100%;text-align:center}
+.onboard .foot-row{margin-top:8px}
+.foot-row .links{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+.foot-row .credit{margin:2px auto 0}
 
 /* home */
 .bar-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
