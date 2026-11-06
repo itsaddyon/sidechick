@@ -6,16 +6,36 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/", "/ws/*", "/api/*", "/robots.txt", "/sitemap.xml", "/sw.js"]
+    "not_found_handling": "404-page",
+    "run_worker_first": [
+      "/*"
+    ]
   },
   "durable_objects": {
     "bindings": [
-      { "name": "ROOM", "class_name": "Room" },
-      { "name": "MATCH", "class_name": "Matchmaker" }
+      {
+        "name": "ROOM",
+        "class_name": "Room"
+      },
+      {
+        "name": "MATCH",
+        "class_name": "Matchmaker"
+      }
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["Room", "Matchmaker"] }
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Room",
+        "Matchmaker"
+      ]
+    }
   ],
-  "observability": { "enabled": false }
+  "vars": {
+    "ALLOWED_ORIGINS": "https://sidechicks.vercel.app"
+  },
+  "observability": {
+    "enabled": false
+  }
 }

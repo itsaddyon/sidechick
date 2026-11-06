@@ -1,7 +1,7 @@
 // Sidechick v2 — screens and flow. Vanilla ES modules, no build step.
-import { $, h, rand, buzz, toast, confetti, sheet, shareSheet, icon, avatar, avatarPicker, iconBox, setTheme, initBackdrop, prefs } from './ui.js';
+import { $, h, rand, buzz, toast, confetti, sheet, shareSheet, icon, avatar, avatarPicker, iconBox, setTheme, initBackdrop, prefs, applyBrandTheme, BRAND_THEMES } from './ui.js';
 import { store, save, BADGES, currentStreak, doneToday, recordActivity, bump, unlock, resetAll } from './store.js';
-import { Conn, waitingCount, backend } from './net.js';
+import { Conn, waitingCount, backend, fetchQotd, voteQotd } from './net.js';
 import { GAMES, BANK, INTERESTS, ICEBREAKERS } from '../shared/questions.js';
 import { renderGame, passAndPlay } from './game.js';
 
@@ -24,7 +24,12 @@ function leaveAll() {
 const show = (...kids) => { app.replaceChildren(...kids); window.scrollTo(0, 0); };
 const enter = () => { if (!history.state?.sc) history.pushState({ sc: 1 }, ''); };
 window.addEventListener('popstate', () => home());
-const applyPrefs = () => { prefs.haptics = store.prefs.haptics !== false; document.body.classList.toggle('calm', store.prefs.bg === false); };
+const currentBrandTheme = () => store.prefs.brandTheme || 'twilight';
+const applyPrefs = () => {
+  prefs.haptics = store.prefs.haptics !== false;
+  document.body.classList.toggle('calm', store.prefs.bg === false);
+  applyBrandTheme(currentBrandTheme());
+};
 
 const logo = () => h('img', { class: 'logo-img', src: '/logo.svg', alt: 'Sidechick', height: 30 });
 const backBtn = fn => h('button', { class: 'back', 'aria-label': 'Back', onclick: () => fn() }, icon('arrow-left', 20));
@@ -37,13 +42,18 @@ function activity() {
 
 // ── credit ───────────────────────────────────────────────────────────────────
 const credit = (cls = '') => h('button', { class: 'credit ' + cls, type: 'button', 'aria-label': 'Made by itsaddyon', onclick: openMadeBy },
-  h('span', { class: 'mono' }, 'A', h('sup', {}, '2')), h('span', { class: 'credit-text' }, h('small', {}, 'crafted by'), h('b', {}, 'itsaddyon')));
+  h('span', { class: 'mono' }, h('span', { class: 'mono-a' }, 'A'), h('sup', {}, '2')),
+  h('span', { class: 'credit-bar' }),
+  h('span', { class: 'credit-text' }, h('small', {}, 'crafted by'), h('b', {}, 'itsaddyon')));
 
 function openMadeBy() {
-  const s = sheet(h('div', { class: 'mode center madeby' }, h('span', { class: 'mono xl' }, 'A', h('sup', {}, '2')),
-    h('h3', { class: 'who-big' }, 'itsaddyon'), h('p', { class: 'sub' }, 'Designed and coded Sidechick. Chat. Play. Poof.'),
-    h('a', { class: 'btn big line', href: 'https://github.com/itsaddyon', target: '_blank', rel: 'noopener' }, icon('external-link', 18), 'See the code on GitHub'),
-    h('button', { class: 'btn big', onclick: () => { s.close(); openFeedback(); } }, icon('lightbulb', 18), 'Send a suggestion'),
+  const s = sheet(h('div', { class: 'mode center madeby' },
+    h('span', { class: 'mono xl' }, h('span', { class: 'mono-a' }, 'A'), h('sup', {}, '2')),
+    h('h3', { class: 'who-big' }, 'itsaddyon'),
+    h('p', { class: 'sub' }, 'Designed and coded Sidechick. Chat. Play. Poof.'),
+    h('a', { class: 'btn big', href: 'https://itsaddyon.dev', target: '_blank', rel: 'noopener' }, icon('external-link', 18), 'Visit itsaddyon.dev'),
+    h('a', { class: 'btn big line', href: 'https://github.com/itsaddyon', target: '_blank', rel: 'noopener' }, icon('code-xml', 18), 'See code on GitHub'),
+    h('button', { class: 'btn line', onclick: () => { s.close(); openFeedback(); } }, icon('lightbulb', 18), 'Send a suggestion'),
     h('button', { class: 'btn ghost', onclick: () => s.close() }, 'Close')));
 }
 
@@ -100,14 +110,56 @@ function installChip() {
 }
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; const c = $('.install-chip'); if (c) c.hidden = false; });
 
+function openThemeSheet() {
+  const cur = currentBrandTheme();
+  const list = Object.values(BRAND_THEMES).map(t => {
+    const isAct = t.id === cur;
+    return h('button', {
+      type: 'button',
+      class: 'theme-card' + (isAct ? ' active' : ''),
+      onclick: () => {
+        store.prefs.brandTheme = t.id;
+        save();
+        applyBrandTheme(t.id);
+        buzz(8);
+        toast(`${t.name} applied`);
+        s.close();
+        home();
+      }
+    },
+      h('div', { class: 'theme-swatch', style: `background:${t.gradient}` }, icon(t.icon, 20)),
+      h('div', { class: 'theme-info' },
+        h('div', { class: 'theme-head' },
+          h('b', {}, t.name),
+          h('span', { class: 'theme-tag' }, icon(t.icon, 11), h('span', {}, t.tag))
+        ),
+        h('span', {}, t.desc)
+      ),
+      h('span', { class: 'theme-check' }, icon('check', 20))
+    );
+  });
+  const s = sheet(h('div', { class: 'mode' },
+    h('h3', {}, 'Theme'),
+    h('p', { class: 'sub' }, 'Choose an aesthetic for the home screen.'),
+    h('div', { class: 'theme-grid' }, list),
+    h('button', { class: 'btn ghost', onclick: () => s.close() }, 'Close')));
+}
+
+function themeChip() {
+  const t = BRAND_THEMES[currentBrandTheme()] || BRAND_THEMES.twilight;
+  return h('button', { class: 'chip theme-chip', type: 'button', 'aria-label': 'Theme: ' + t.name, onclick: openThemeSheet },
+    icon(t.icon, 14),
+    h('span', {}, t.shortName || t.name));
+}
+
 function home() {
   leaveAll();
   if (!store.adult) return onboard();
-  const live = h('span', { class: 'live', hidden: true });
+  const live = h('span', { class: 'live', id: 'live-waiting', hidden: true });
   const code = h('input', { maxlength: 5, placeholder: 'ROOM CODE', autocapitalize: 'characters', autocomplete: 'off', 'aria-label': 'Room code' });
   const streak = currentStreak();
   show(h('div', { class: 'screen home' }, h('div', { class: 'inner' },
-    h('div', { class: 'bar-top' }, logo(), h('div', { class: 'chips-top' }, installChip(),
+    h('div', { class: 'bar-top' }, logo(), h('div', { class: 'chips-top' }, themeChip(), installChip(),
       streak ? h('button', { class: 'chip fire' + (doneToday() ? ' lit' : ''), 'aria-label': `${streak} day streak`, onclick: openStuff }, icon('flame', 16), String(streak)) : null,
       h('button', { class: 'avatar-btn', 'aria-label': 'Your profile', onclick: openStuff }, avatar(store.av, 38)))),
     h('div', { class: 'hello' }, `Hey ${store.name}`),
@@ -120,17 +172,172 @@ function home() {
     h('div', { class: 'foot-row' }, h('div', { class: 'links' },
       h('button', { class: 'link', onclick: openPrivacy }, icon('shield-check', 14), 'Privacy'),
       h('button', { class: 'link', onclick: openFeedback }, icon('lightbulb', 14), 'Suggest something')), credit()))));
-  const poll = async () => { const n = await waitingCount(); live.hidden = !(n > 0); if (n > 0) live.textContent = `${n} waiting`; };
-  poll(); every(() => { if (!document.hidden) poll(); }, 30000);
+  const poll = async () => {
+    const n = await waitingCount();
+    if (!live.isConnected) return;
+    live.hidden = !(n > 0);
+    if (n > 0) live.textContent = `${n} waiting`;
+  };
+  poll();
+  every(() => { if (!document.hidden) poll(); }, 3500);
 }
 
 function qotd() {
-  const pool = BANK.same_brain, q = pool[Math.floor(Date.now() / 864e5) % pool.length];
-  const opts = q.o.map(o => h('button', { class: 'chip opt-chip', onclick: ev => {
-    ev.currentTarget.parentNode.querySelectorAll('button').forEach(b => b.classList.remove('on')); ev.currentTarget.classList.add('on'); buzz(8);
-    toast('Locked in. Now find out who agrees.'); } }, o));
-  return h('div', { class: 'qotd' }, h('small', {}, 'Question of the day'), h('b', {}, q.q), h('div', { class: 'row2' }, opts),
-    h('button', { class: 'link', onclick: () => shareSheet({ title: 'Send it to someone', text: `${q.q} ${q.o.join(' or ')}? Tell me.`, url: location.origin }, () => award('inviter')) }, icon('share-2', 14), 'Send it to someone'));
+  const pool = BANK.same_brain;
+  const day = Math.floor(Date.now() / 864e5);
+  const q = pool[day % pool.length];
+
+  const card = h('div', { class: 'qotd' });
+  let pollData = null;
+  let votedChoice = (store.qotd?.day === day) ? store.qotd.choice : null;
+  let optEls = [];
+  let metaTotalEl = null;
+  let renderedHasVoted = null;
+
+  function updateView() {
+    const total = pollData?.total || 0;
+    const hasVoted = typeof votedChoice === 'number';
+
+    if (renderedHasVoted !== hasVoted) {
+      renderedHasVoted = hasVoted;
+      optEls = [];
+
+      const opts = q.o.map((opt, i) => {
+        if (!hasVoted) {
+          return h('button', {
+            class: 'chip opt-chip',
+            onclick: async () => {
+              buzz(12);
+              votedChoice = i;
+              store.qotd = { day, choice: i };
+              save();
+              updateView();
+              toast('Vote recorded! See the live poll.');
+              const res = await voteQotd(day, i, store.cid);
+              if (res?.counts && card.isConnected) {
+                pollData = res;
+                updateView();
+              }
+            }
+          }, opt);
+        }
+
+        const count = pollData?.counts?.[i] || 0;
+        const pct = total > 0 ? Math.round((count / total) * 100) : (votedChoice === i ? 100 : 0);
+        const isPick = votedChoice === i;
+
+        const bar = h('div', { class: 'poll-bar', style: `width: ${pct}%` });
+        const badge = isPick ? h('span', { class: 'poll-badge' }, icon('check', 11), 'You') : null;
+        const pctTxt = h('span', { class: 'pct-val' }, `${pct}%`);
+        const countTxt = h('small', {}, ` (${count})`);
+        const pctContainer = h('span', { class: 'poll-pct' }, pctTxt, countTxt);
+
+        const btn = h('button', {
+          class: 'poll-opt' + (isPick ? ' mine' : ''),
+          onclick: async () => {
+            if (votedChoice === i) return;
+            buzz(12);
+            votedChoice = i;
+            store.qotd = { day, choice: i };
+            save();
+            updateView();
+            const res = await voteQotd(day, i, store.cid);
+            if (res?.counts && card.isConnected) {
+              pollData = res;
+              updateView();
+            }
+          }
+        },
+          bar,
+          h('span', { class: 'poll-txt' }, opt, badge),
+          pctContainer
+        );
+
+        optEls[i] = { btn, bar, pctTxt, countTxt, pctContainer, prevCount: count, prevPct: pct };
+        return btn;
+      });
+
+      metaTotalEl = h('span', { class: 'poll-meta-txt' });
+      const shareBtn = h('button', {
+        class: 'link',
+        onclick: () => shareSheet({
+          title: 'Question of the day',
+          text: `${q.q} ${q.o.join(' or ')}? Vote on Sidechick.`,
+          url: location.origin
+        }, () => award('inviter'))
+      }, icon('share-2', 14), 'Share');
+
+      card.replaceChildren(
+        h('div', { class: 'qotd-header' },
+          h('small', {}, 'Question of the day'),
+          h('span', { class: 'poll-pill' }, icon('bar-chart-2', 12), 'Live poll')
+        ),
+        h('b', { class: 'qotd-title' }, q.q),
+        h('div', { class: hasVoted ? 'qotd-poll' : 'row2' }, opts),
+        h('div', { class: 'qotd-foot' }, metaTotalEl, shareBtn)
+      );
+    }
+
+    // In-place updates so CSS transitions animate smoothly without resetting DOM
+    if (hasVoted) {
+      q.o.forEach((_, i) => {
+        const item = optEls[i];
+        if (!item) return;
+        const count = pollData?.counts?.[i] || 0;
+        const pct = total > 0 ? Math.round((count / total) * 100) : (votedChoice === i ? 100 : 0);
+        const isPick = votedChoice === i;
+
+        item.btn.classList.toggle('mine', isPick);
+        const badge = item.btn.querySelector('.poll-badge');
+        if (isPick && !badge) {
+          item.btn.querySelector('.poll-txt').append(h('span', { class: 'poll-badge' }, icon('check', 11), 'You'));
+        } else if (!isPick && badge) {
+          badge.remove();
+        }
+
+        // Smooth width slide
+        item.bar.style.width = `${pct}%`;
+
+        // Pulse / bump numbers if changed
+        if (item.prevCount !== count || item.prevPct !== pct) {
+          item.pctTxt.textContent = `${pct}%`;
+          item.countTxt.textContent = ` (${count})`;
+          item.pctContainer.classList.remove('bump');
+          void item.pctContainer.offsetWidth;
+          item.pctContainer.classList.add('bump');
+          item.prevCount = count;
+          item.prevPct = pct;
+        }
+      });
+
+      if (metaTotalEl) {
+        metaTotalEl.replaceChildren(icon('users', 13), ` ${total} vote${total === 1 ? '' : 's'} today`);
+      }
+    } else {
+      if (metaTotalEl) {
+        metaTotalEl.replaceChildren(
+          icon('sparkles', 13),
+          total > 0 ? ` ${total} vote${total === 1 ? '' : 's'} · Vote to see results` : ' Vote to see how others voted'
+        );
+      }
+    }
+  }
+
+  updateView();
+
+  const sync = async () => {
+    if (!card.isConnected) return;
+    const res = await fetchQotd(day);
+    if (res?.counts && card.isConnected) {
+      pollData = res;
+      updateView();
+    }
+  };
+
+  sync();
+  every(() => { if (!document.hidden) sync(); }, 3500);
+
+  return card;
 }
 
 function joinByCode(v) {
@@ -168,7 +375,7 @@ function search({ pool, interests = [], title }) {
     h('div', { class: 'radar' }, h('i'), h('i'), h('i'), avatar(store.av, 84, 'me')),
     h('h2', {}, title || 'Finding someone'), timer, tip,
     interests.length ? h('div', { class: 'chips-wrap small' }, interests.map(i => h('span', { class: 'chip on' }, i))) : null,
-    quiet, h('button', { class: 'btn ghost', onclick: () => home() }, 'Cancel'))));
+    quiet, h('button', { class: 'btn ghost', onclick: () => { conn?.send({ t: 'cancel' }); home(); } }, 'Cancel'))));
   every(() => { secs++; timer.textContent = secs + 's'; if (secs % 5 === 0) tip.textContent = rand(TIPS); if (secs === 25) quiet.hidden = false; }, 1000);
   const mine = conn = new Conn('/ws/match', {
     open() { mine.send({ t: 'find', pool, interests, adult: true, cid: store.cid }); },
@@ -234,7 +441,7 @@ function startPass(kind, rounds, names) {
 // ── rooms ────────────────────────────────────────────────────────────────────
 function joinRoom(code, o = {}) {
   leaveAll(); enter();
-  R = { code, mode: o.mode || 'private', kind: o.kind || null, rounds: o.rounds || 10, random: !!o.random, shared: o.shared || [], token: o.token || null, create: !!o.create,
+  R = { code, mode: o.mode || 'private', kind: o.kind || null, rounds: o.rounds || 10, random: !!o.random, shared: o.shared || [], token: o.token || null, create: !!o.create, photosAllowed: !o.random,
         uid: null, users: [], game: null, els: {}, photos: {}, lastSender: null, ended: false, hidden: false, picks: {}, tries: 0, doneKey: '', typeT: null, typingSent: 0, intro: false };
   buildRoom(); connect();
 }
@@ -271,11 +478,12 @@ function buildRoom() {
     clearTimeout(R.typeT); R.typeT = setTimeout(() => { R.typingSent = 0; conn?.send({ t: 'typing', on: false }); }, 2500);
   });
   ui.photoInput = h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: onPickPhoto });
+  ui.photoBtn = h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Send a view-once photo', onclick: onPhotoBtnClick }, icon('image', 20));
   ui.form = h('form', { class: 'composer', autocomplete: 'off', onsubmit: e => {
     e.preventDefault(); const t = ui.input.value.trim(); if (!t || R.ended) return;
     conn?.send({ t: 'msg', text: t }); ui.input.value = ''; ui.input.focus(); clearTimeout(R.typeT); R.typingSent = 0; conn?.send({ t: 'typing', on: false }); activity(); } },
     h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Play a game', onclick: openPicker }, icon('gamepad-2', 20)),
-    R.random ? null : h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Send a view-once photo', onclick: () => ui.photoInput.click() }, icon('image', 20)),
+    ui.photoBtn,
     h('button', { type: 'button', class: 'icon-btn spark', 'aria-label': 'Suggest an icebreaker', onclick: () => { ui.input.value = pickSpark(); ui.input.focus(); } }, icon('lightbulb', 20)),
     ui.input, ui.photoInput, h('button', { class: 'send', 'aria-label': 'Send' }, icon('arrow-up', 22)));
   ui.pill = h('button', { class: 'pill', hidden: true, onclick: () => { R.hidden = false; renderGameLayer(); } }, icon('gamepad-2', 18), h('span', {}, 'Back to game'));
@@ -351,10 +559,50 @@ function paintReacts(id, reacts) {
 }
 
 // tab title + buzz when something arrives while you're elsewhere
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { unread = 0; document.title = BASE_TITLE; } });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    unread = 0;
+    document.title = BASE_TITLE;
+    const live = $('#live-waiting');
+    if (live && live.isConnected) waitingCount().then(n => {
+      live.hidden = !(n > 0);
+      if (n > 0) live.textContent = `${n} waiting`;
+    });
+  }
+});
+window.addEventListener('pagehide', () => {
+  try { conn?.send({ t: 'cancel' }); conn?.close(); } catch {}
+});
 function ping() { if (!document.hidden) return; unread++; document.title = `(${unread}) New message | Sidechick`; buzz(60); }
 
-// ── view-once photos (private rooms) ─────────────────────────────────────────
+// ── view-once photos ────────────────────────────────────────────────────────
+function onPhotoBtnClick() {
+  if (!R || R.ended) return;
+  if (R.photosAllowed) return R.ui.photoInput.click();
+  const peer = R.users.find(u => u.uid !== R.uid);
+  if (!peer) return toast('Wait for someone to join first.');
+  const peerName = peer.name || 'Stranger';
+  const s = sheet(h('div', { class: 'mode center' },
+    iconBox('image', 34, 'lg'),
+    h('h3', {}, 'Enable photo sharing?'),
+    h('p', { class: 'sub' }, `Photos in stranger chats are locked by default. Ask ${peerName} for permission? If they agree, both of you can share view-once photos.`),
+    h('p', { class: 'tiny left' }, "Photos disappear after one view, are never stored on any server, and are watermarked with the recipient's name."),
+    h('button', { class: 'btn big', onclick: () => { conn?.send({ t: 'photo_perm_req' }); s.close(); } }, icon('send', 18), `Ask ${peerName}`),
+    h('button', { class: 'btn ghost', onclick: () => s.close() }, 'Cancel')));
+}
+
+function photoPermSheet(m) {
+  if (!R || R.ended) return;
+  buzz([20, 40, 20]);
+  const s = sheet(h('div', { class: 'mode center' },
+    iconBox('image', 34, 'lg'),
+    h('h3', {}, `${m.from || 'Stranger'} wants to share photos`),
+    h('p', { class: 'sub' }, 'They are asking for permission to enable photo sharing in this chat. If you allow it, both of you can send view-once photos.'),
+    h('p', { class: 'tiny left' }, 'Photos disappear after one view, are never stored on any server, and are watermarked with your name.'),
+    h('button', { class: 'btn big', onclick: () => { conn?.send({ t: 'photo_perm_reply', accept: true }); s.close(); } }, icon('check', 18), 'Allow photo sharing'),
+    h('button', { class: 'btn ghost', onclick: () => { conn?.send({ t: 'photo_perm_reply', accept: false }); s.close(); } }, 'Decline')));
+}
+
 function photoCard(m, mine) {
   const btn = h('button', { type: 'button', class: 'photo-card' + (mine ? ' mine' : '') });
   R.photos[m.id] = { btn, mine, state: m.state, secs: m.secs };
@@ -428,7 +676,7 @@ function onMsg(m) {
   if (!R) return;
   switch (m.t) {
     case 'joined':
-      Object.assign(R, { uid: m.you, users: m.users, mode: m.mode, kind: m.kind, create: false, tries: 0, vibe: m.vibe });
+      Object.assign(R, { uid: m.you, users: m.users, mode: m.mode, kind: m.kind, create: false, tries: 0, vibe: m.vibe, photosAllowed: !!m.photos });
       R.ui.feed.querySelectorAll('.row,.sys').forEach(n => n.remove()); R.els = {}; R.photos = {}; R.lastSender = null;
       m.history.forEach(addMsg); renderTop(); emptyCard();
       if (R.random && !R.intro) {
@@ -448,6 +696,11 @@ function onMsg(m) {
       clearTimeout(R.hideT);
       if (m.on) { R.ui.typing.textContent = `${m.name} is typing…`; R.hideT = setTimeout(() => { if (R) R.ui.typing.textContent = ''; }, 4500); }   // refreshed by every heartbeat
       else R.ui.typing.textContent = '';
+      break;
+    case 'photo_perm_req': photoPermSheet(m); break;
+    case 'photo_perm_granted':
+      R.photosAllowed = true;
+      toast('Photo sharing enabled! You can now send photos.');
       break;
     case 'photo_data': showPhoto(m); break;
     case 'photo_state': if (R.photos[m.id]) { R.photos[m.id].state = m.state; paintPhoto(m.id); } break;
@@ -533,6 +786,16 @@ function openStuff() {
       h('div', {}, h('b', {}, String(store.games || 0)), h('small', {}, 'games')), h('div', {}, h('b', {}, String(store.chats || 0)), h('small', {}, 'chats'))),
     h('p', { class: 'tiny left' }, 'Play a game or chat once a day to keep your streak. It lives on this device, so clearing your browser data or switching phones resets it.'),
     h('div', { class: 'badges' }, Object.entries(BADGES).map(([id, b]) => h('div', { class: 'badge' + (store.badges[id] ? ' on' : ''), title: b.d }, icon(store.badges[id] ? b.icon : 'lock', 22), h('small', {}, b.t), h('i', {}, b.d)))),
+    h('div', { class: 'theme-option-row' },
+      h('div', { class: 'pv', style: 'margin:0' },
+        iconBox('palette', 20),
+        h('div', {},
+          h('b', {}, 'Theme aesthetic'),
+          h('small', {}, `${BRAND_THEMES[currentBrandTheme()]?.name || 'Twilight Dream'} · ${BRAND_THEMES[currentBrandTheme()]?.tag || 'Sweet Stranger'}`)
+        )
+      ),
+      h('button', { class: 'btn small line', type: 'button', onclick: () => { s.close(); openThemeSheet(); } }, 'Change')
+    ),
     toggle('Animated background', 'bg'), toggle('Vibration', 'haptics'),
     ios ? h('p', { class: 'tiny left' }, 'Install: tap the Share button in Safari, then Add to Home Screen.') : null,
     h('button', { class: 'btn big', onclick: () => { store.name = input.value.trim().slice(0, 16) || store.name; store.av = av; save(); s.close(); home(); } }, 'Save'),
@@ -547,7 +810,7 @@ function openPrivacy() {
     li('users', 'Two people per room', 'Every room, private or random, holds exactly two people. Nobody else can join.'),
     li('dices', 'Random chats', 'Anyone can say anything except threats, which are blocked, and links, which are not allowed with strangers. Skip or report anyone. A report ends the chat and repeat offenders get a short time-out, tracked anonymously in memory with no chat content.'),
     li('cherry', 'Spicy games', 'The 18+ packs can be played with strangers, but only if the other person accepts your invite. Say no any time.'),
-    li('image', 'View-once photos', 'Available in private rooms only. A photo is held in memory until the other person opens it, sent once, then deleted. It is hidden if they leave the screen and tagged with their name. No website can fully block screenshots, so only send what you trust them with.'),
+    li('image', 'View-once photos', 'In private rooms or when mutually agreed in stranger chats. A photo is held in memory until the other person opens it, sent once, then deleted. It is hidden if they leave the screen and tagged with their name. No website can fully block screenshots, so only send what you trust them with.'),
     li('lightbulb', 'Suggestions', 'If you send a suggestion, the text you type goes to the developer on Telegram. That is the only thing that ever leaves this app.'),
     li('eye-off', 'Strangers stay strangers', 'We never ask who you are. Think before you share personal details, photos or contact info.'),
     li('info', 'Honest limits', 'Age confirmation is a tap, not a check, so we cannot verify it. Chats are not end-to-end encrypted: the server relays them in memory. Never share anything you would not say out loud.'),

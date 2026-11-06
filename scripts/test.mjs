@@ -74,6 +74,11 @@ try {
   for (const f of ['/og.png', '/logo.svg', '/favicon.svg', '/manifest.webmanifest', '/brand/icon-512.png', '/brand/apple-touch-icon.png'])
     ok((await fetch(BASE + f)).status === 200, 'asset ' + f);
   ok((await (await fetch(BASE + '/api/stats')).json()).waiting === 0, 'stats');
+  const p404 = await fetch(BASE + '/non-existent-page');
+  const h404 = await p404.text();
+  ok(p404.status === 404 && h404.includes('Page vanished') && p404.headers.get('content-security-policy')?.includes("script-src 'self'"), 'custom 404 page served with 404 status and security headers');
+  const api404 = await fetch(BASE + '/api/unknown_endpoint');
+  ok(api404.status === 404 && (await api404.json()).error === 'not_found', 'unknown API endpoint returns 404 JSON');
 
   console.log('private room + chat (max 2)');
   const noAdult = client('/ws/room/KXPT'); await noAdult.open; noAdult.send({ t: 'join', name: 'x', create: true });
@@ -119,15 +124,16 @@ try {
   const sneak = await join(m1.room, { name: 'Sneak' }); ok((await sneak.wait('join_error')).code === 'missing', 'joining a random room by code alone fails');
   const sneak2 = await join(m1.room, { name: 'Sneak', token: m1.token }); ok((await sneak2.wait('join_error')).code === 'full', 'even with the token a third person cannot join');
   r1.send({ t: 'msg', text: 'call me on 9876543210' }); ok((await r2.wait('msg', x => !x.m.sys)).m.text.includes('9876543210'), 'phone numbers are allowed');
-  await sleep(300); r1.send({ t: 'msg', text: 'mail me a@b.co' }); await sleep(300);
+  await sleep(400); r1.send({ t: 'msg', text: 'mail me a@b.co' }); await sleep(400);
   r1.send({ t: 'msg', text: 'visit https://x.com/me' }); ok((await r1.wait('toast', x => x.text.includes('Links'))).text.length > 0, 'links blocked in random chat');
   await sleep(300); r1.send({ t: 'msg', text: 'i will find you' }); ok((await r1.wait('toast', x => x.text.includes('Threats'))).text.length > 0, 'threats blocked in random chat');
   await sleep(300); r1.send({ t: 'msg', text: 'send nudes lol' }); await sleep(300);
   ok(r2.msgs.filter(m => m.t === 'msg' && m.m.text === 'send nudes lol').length === 1, 'no other restrictions (explicit talk is not filtered)');
-  r1.msgs.length = 0; r1.send({ t: 'game_start', kind: 'spicy_or_sweet' });
+  r1.msgs.length = 0; r2.msgs.length = 0; r1.send({ t: 'game_start', kind: 'spicy_or_sweet' });
   const inv = await r2.wait('invite'); ok(inv.kind === 'spicy_or_sweet', 'spicy game with a stranger starts as an invite');
   r2.send({ t: 'invite_reply', ok: false }); ok((await r1.wait('toast', x => x.text.includes('passed'))).text.length > 0, 'stranger can decline');
-  r1.send({ t: 'game_start', kind: 'spicy_or_sweet' }); await r2.wait('invite', x => true);
+  await sleep(150); r2.msgs.length = 0; r1.msgs.length = 0;
+  r1.send({ t: 'game_start', kind: 'spicy_or_sweet' }); await r2.wait('invite');
   r2.send({ t: 'invite_reply', ok: true });
   const sg = await r1.wait('game', x => x.game); ok(sg.game.kind === 'spicy_or_sweet' && sg.game.nsfw, 'spicy game starts after accept');
   r2.close(); ok(!!(await r1.wait('peer_left')), 'peer_left sent when stranger leaves'); r1.close();

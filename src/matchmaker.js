@@ -8,13 +8,26 @@ const makeCode = n => Array.from({ length: n }, () => CODE_CHARS[Math.floor(Math
 
 export class Matchmaker {
   constructor(ctx, env) {
+    this.ctx = ctx;
     this.env = env; this.q = []; this.timer = null; this.busy = false;
     this.strikes = new Map(); this.cool = new Map(); this.recent = new Map(); this.rates = new Map();
+    this.qotd = new Map();
   }
 
   async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname === '/stats') return Response.json({ waiting: this.q.length });
+    if (url.pathname === '/stats') {
+      this.cleanQueue();
+      return Response.json({ waiting: this.q.length });
+    }
+    if (url.pathname === '/qotd') {
+      if (request.method === 'POST') {
+        const body = await request.json().catch(() => ({}));
+        return Response.json(await this.voteQotd(body));
+      }
+      const day = Number(url.searchParams.get('day')) || Math.floor(Date.now() / 864e5);
+      return Response.json(await this.getQotd(day));
+    }
     if (url.pathname === '/rate') {                                  // tiny rate limiter for the feedback form: 3 per 10 min
       const k = url.searchParams.get('k') || '', now = Date.now(), list = (this.rates.get(k) || []).filter(t => now - t < 600000), ok = list.length < 3;
       if (ok) list.push(now);
@@ -55,6 +68,7 @@ export class Matchmaker {
   onMessage(conn, raw) {
     if (typeof raw !== 'string' || raw.length > 2000) return;
     let m; try { m = JSON.parse(raw); } catch { return; }
+    if (conn.entry) conn.entry.lastSeen = Date.now();
     if (m.t === 'ping') return this.send(conn.ws, { t: 'pong' });
     if (m.t === 'cancel') return this.drop(conn);
     if (m.t !== 'find') return;
@@ -67,7 +81,8 @@ export class Matchmaker {
     }
     const interests = new Set((Array.isArray(m.interests) ? m.interests : []).slice(0, 5).map(s => String(s).slice(0, 24)));
     this.drop(conn);
-    const e = { ws: conn.ws, conn, ip: conn.ip, cid: String(m.cid || '').slice(0, 40) || 'anon-' + Math.random(), pool, interests, since: Date.now() };
+    const now = Date.now();
+    const e = { ws: conn.ws, conn, ip: conn.ip, cid: String(m.cid || '').slice(0, 40) || 'anon-' + Math.random(), pool, interests, since: now, lastSeen: now };
     const mins = this.cooling(e);
     if (mins) { this.send(conn.ws, { t: 'cooldown', minutes: mins }); try { conn.ws.close(1000); } catch {} return; }
     this.q.push(e); conn.entry = e;
@@ -76,11 +91,78 @@ export class Matchmaker {
     this.tick();
   }
 
+  cleanQueue() {
+    const now = Date.now();
+    this.q = this.q.filter(e => {
+      if (now - e.since > MAX_WAIT_MS) {
+        try { e.ws.close(1000); } catch {}
+        if (e.conn) e.conn.entry = null;
+        return false;
+      }
+      if (typeof e.ws.readyState === 'number' && e.ws.readyState > 1) {
+        if (e.conn) e.conn.entry = null;
+        return false;
+      }
+      if (e.lastSeen && now - e.lastSeen > 14000) {
+        try { e.ws.close(1000); } catch {}
+        if (e.conn) e.conn.entry = null;
+        return false;
+      }
+      return true;
+    });
+    this.stopIfEmpty();
+  }
+
   drop(conn) {
     if (conn.entry) { this.q = this.q.filter(x => x !== conn.entry); conn.entry = null; }
     this.stopIfEmpty();
   }
   stopIfEmpty() { if (!this.q.length && this.timer) { clearInterval(this.timer); this.timer = null; } }
+
+  async getQotd(day) {
+    let data = this.qotd.get(day);
+    if (!data && this.ctx?.storage) {
+      data = await this.ctx.storage.get(`qotd:${day}`);
+      if (data) this.qotd.set(day, data);
+    }
+    if (!data) data = { counts: {}, total: 0 };
+    return { day, counts: data.counts || {}, total: data.total || 0 };
+  }
+
+  async voteQotd({ day, choice, cid }) {
+    day = Number(day) || Math.floor(Date.now() / 864e5);
+    choice = Number(choice);
+    if (isNaN(choice) || choice < 0 || choice > 10) return { ok: false, error: 'bad choice' };
+    const voterKey = String(cid || '').slice(0, 40) || 'anon';
+    let data = this.qotd.get(day);
+    if (!data && this.ctx?.storage) {
+      data = await this.ctx.storage.get(`qotd:${day}`);
+    }
+    if (!data) data = { counts: {}, voters: {}, total: 0 };
+    data.counts ||= {};
+    data.voters ||= {};
+
+    const prevChoice = data.voters[voterKey];
+    if (prevChoice === choice) {
+      return { ok: true, day, counts: data.counts, total: data.total, yourChoice: choice };
+    }
+
+    if (typeof prevChoice === 'number' && data.counts[prevChoice]) {
+      data.counts[prevChoice] = Math.max(0, data.counts[prevChoice] - 1);
+    } else {
+      data.total = (data.total || 0) + 1;
+    }
+
+    data.counts[choice] = (data.counts[choice] || 0) + 1;
+    data.voters[voterKey] = choice;
+
+    this.qotd.set(day, data);
+    if (this.ctx?.storage) {
+      this.ctx.storage.put(`qotd:${day}`, data).catch(() => {});
+    }
+
+    return { ok: true, day, counts: data.counts, total: data.total, yourChoice: choice };
+  }
 
   met(a, b) {
     const t = this.recent.get(a.cid + '|' + b.cid) || this.recent.get(b.cid + '|' + a.cid);
@@ -91,10 +173,8 @@ export class Matchmaker {
     if (this.busy) return;
     this.busy = true;
     try {
+      this.cleanQueue();
       const now = Date.now();
-      for (const e of this.q.filter(x => now - x.since > MAX_WAIT_MS)) {       // give up on very old waiters
-        this.send(e.ws, { t: 'timeout' }); try { e.ws.close(1000); } catch {} this.drop(e.conn);
-      }
       for (let guard = 0; guard < 50; guard++) {
         let best = null;
         for (let i = 0; i < this.q.length; i++) for (let j = i + 1; j < this.q.length; j++) {

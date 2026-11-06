@@ -133,6 +133,7 @@ try {
   click($('.composer .icon-btn')); await waitFor('.sheet .gcard', 2000, 'picker');
   ok($$('.sheet .gcard').length === 8 && $$('.sheet .gcard .icon-box svg').length === 8, 'picker lists all 8 games with icons');
   click($$('.sheet .gcard')[0]);
+  await f.wait('game');
   await waitFor('.game', 3000, 'game'); ok(document.body.dataset.theme === 'same_brain', 'screen theme switches to the game mood');
   let done = false, sawDifferent = false, bad = false;
   for (let n = 0; n < 40 && !done; n++) {
@@ -140,7 +141,9 @@ try {
     if ($('.pct')) { done = true; break; }
     const opt = $('.opt:not([disabled])');
     if (opt) {
-      const idx = $$('.opt').indexOf(opt), gi = f.msgs.filter(m => m.t === 'game').pop().game; click(opt);
+      const idx = $$('.opt').indexOf(opt);
+      const gi = f.msgs.filter(m => m.t === 'game').pop()?.game || (await f.wait('game')).game;
+      click(opt);
       f.send({ t: 'game_answer', i: gi.i, choice: gi.i % 2 === 0 ? idx : (idx + 1) % gi.o.length });
       await waitFor(() => $('.bridge'), 5000, 'reveal');
     }
@@ -184,7 +187,7 @@ try {
   await waitFor('.splash', 4000, 'match splash'); ok($('.splash h2').textContent.includes('connected'), 'match splash shown');
   const sr = bot('/ws/room/' + mm.room); await sr.open; sr.send({ t: 'join', name: 'Stranger', av: 'a9', adult: true, cid: 'bot-stranger', token: mm.token }); await sr.wait('joined');
   await waitFor('.peer b', 5000, 'random room'); ok($('.peer b').textContent === 'Stranger' && !!$('.top .btn.small'), 'random chat shows peer + Next button');
-  ok(!$('.composer button[aria-label="Send a view-once photo"]'), 'no photo button in random chats');
+  ok(!!$('.composer button[aria-label="Send a view-once photo"]'), 'photo button is available in random chats with permission flow');
   sr.send({ t: 'msg', text: 'yo' }); await waitFor(() => $$('.bubble').some(b => b.textContent === 'yo'), 4000, 'stranger msg'); ok(true, 'stranger message rendered');
   sr.send({ t: 'game_start', kind: 'spicy_or_sweet' });
   await waitFor('.sheet .mode.center', 3000, 'invite'); ok($('.sheet').textContent.includes('18+ and spicy'), 'spicy invite from a stranger is flagged 18+ and can be declined');

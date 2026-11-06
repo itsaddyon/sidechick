@@ -24,6 +24,12 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // ── living background ────────────────────────────────────────────────────────
 const THEME_ICONS = {
   brand: ['message-circle', 'dices', 'sparkles', 'gamepad-2', 'heart', 'zap'],
+  twilight: ['heart', 'sparkles', 'moon-star', 'message-circle', 'waves'],
+  sakura: ['cherry', 'heart', 'sparkles', 'smile', 'moon-star'],
+  aura: ['sparkles', 'heart', 'moon-star', 'waves', 'smile'],
+  classic: ['heart', 'sparkles', 'sun', 'moon-star', 'message-circle'],
+  cyber: ['sparkles', 'heart', 'zap', 'smile', 'gamepad-2'],
+  stealth: ['star', 'moon-star', 'sparkles', 'heart'],
   same_brain: ['brain', 'sparkles', 'zap', 'waves'],
   hot_takes: ['megaphone', 'zap', 'flame', 'message-circle'],
   know_me: ['user-round-search', 'message-circle', 'sparkles', 'smile'],
@@ -33,6 +39,84 @@ const THEME_ICONS = {
   truth_or_lie: ['drama', 'eye-off', 'circle-help', 'ghost'],
   spicy_or_sweet: ['flame', 'cherry', 'heart', 'flame-kindling'],
 };
+
+export const BRAND_THEMES = {
+  twilight: {
+    id: 'twilight',
+    name: 'Twilight Dream',
+    shortName: 'Twilight',
+    icon: 'moon-star',
+    tag: 'Sweet Stranger',
+    desc: 'Deep Indigo, Rose Pink & Peach Glow · Starlit romantic connection',
+    accent: '#E8559D',
+    bg: '#0A0818',
+    gradient: 'radial-gradient(circle at 35% 35%, #E8559D 0%, #7C3AED 55%, #0A0818 100%)'
+  },
+  sakura: {
+    id: 'sakura',
+    name: 'Cherry Blossom',
+    shortName: 'Blossom',
+    icon: 'cherry',
+    tag: 'Sweet & Warm',
+    desc: 'Midnight Plum, Soft Rose & Golden Amber · Gentle floral warmth',
+    accent: '#FB7185',
+    bg: '#120716',
+    gradient: 'radial-gradient(circle at 35% 35%, #FB7185 0%, #881337 55%, #120716 100%)'
+  },
+  aura: {
+    id: 'aura',
+    name: 'Lavender Haze',
+    shortName: 'Lavender',
+    icon: 'sparkles',
+    tag: 'Dreamy Lilac',
+    desc: 'Soft Lilac, Cotton Pink & Sky Aqua · Sweet starlight dream',
+    accent: '#FF4D8D',
+    bg: '#0B0916',
+    gradient: 'radial-gradient(circle at 35% 35%, #FF4D8D 0%, #A855F7 60%, #0B0916 100%)'
+  },
+  classic: {
+    id: 'classic',
+    name: 'Honey Sunset',
+    shortName: 'Honey',
+    icon: 'sun',
+    tag: 'Cozy Original',
+    desc: 'Warm Coral, Purple & Amber · Cozy late-night chats',
+    accent: '#FF5B3A',
+    bg: '#0E0D12',
+    gradient: 'radial-gradient(circle at 35% 35%, #FF5B3A 0%, #7A5CFF 62%, #0E0D12 100%)'
+  },
+  cyber: {
+    id: 'cyber',
+    name: 'Starry Mint',
+    shortName: 'Mint',
+    icon: 'zap',
+    tag: 'Fresh & Sweet',
+    desc: 'Sweet Lime & Cosmic Violet · Fresh, playful & lively vibe',
+    accent: '#D2FF00',
+    bg: '#07080D',
+    gradient: 'radial-gradient(circle at 35% 35%, #D2FF00 0%, #7928CA 62%, #07080D 100%)'
+  },
+  stealth: {
+    id: 'stealth',
+    name: 'Midnight Starlight',
+    shortName: 'Starlight',
+    icon: 'star',
+    tag: 'Pure & Minimal',
+    desc: 'Crisp Silver & Pure Obsidian · Starlit sky with touch glow',
+    accent: '#FFFFFF',
+    bg: '#050508',
+    gradient: 'radial-gradient(circle at 35% 35%, #FFFFFF 0%, #3F3F46 65%, #050508 100%)'
+  }
+};
+
+export function applyBrandTheme(themeId) {
+  const id = BRAND_THEMES[themeId] ? themeId : 'twilight';
+  document.body.dataset.brand = id;
+  if (!document.body.dataset.theme || document.body.dataset.theme === 'brand') {
+    paintFloaters(id);
+  }
+}
+
 function paintFloaters(name) {
   const box = document.querySelector('.floaters'); if (!box) return;
   const set = THEME_ICONS[name] || THEME_ICONS.brand, items = [];
@@ -48,10 +132,13 @@ function paintFloaters(name) {
 export function setTheme(name) {
   const n = name || 'brand';
   if (document.body.dataset.theme === n) return;
-  document.body.dataset.theme = n; paintFloaters(n);
+  document.body.dataset.theme = n;
+  const floaterKey = n === 'brand' ? (document.body.dataset.brand || 'twilight') : n;
+  paintFloaters(floaterKey);
 }
 export function initBackdrop() {
-  paintFloaters(document.body.dataset.theme || 'brand');
+  const cur = document.body.dataset.brand || 'twilight';
+  paintFloaters(document.body.dataset.theme === 'brand' || !document.body.dataset.theme ? cur : document.body.dataset.theme);
   let raf = 0;
   const move = e => {                                         // a soft glow follows your finger or cursor
     const p = e.touches ? e.touches[0] : e; if (!p) return;

@@ -11,6 +11,10 @@
 <meta name="rating" content="RTA-5042-1996-1400-1577-RTA">
 <meta name="theme-color" content="#0E0D12">
 <meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sidechick">
 <link rel="canonical" href="__ORIGIN__/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/brand/favicon-32.png" sizes="32x32" type="image/png">
@@ -37,7 +41,7 @@
  "description":"Random chat, couple and friend games, and private rooms. No sign-up, nothing is saved.","applicationCategory":"SocialNetworkingApplication",
  "operatingSystem":"Any","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"audience":{"@type":"PeopleAudience","suggestedMinAge":18},
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
- "author":{"@type":"Person","name":"Addy","alternateName":"itsaddyon","url":"https://github.com/itsaddyon"}}
+ "author":{"@type":"Person","name":"Addy","alternateName":"itsaddyon","url":"https://itsaddyon.dev"}}
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,7 +49,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:wght@500;700;800&family=Fraunces:ital,wght@1,600;1,700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
 </head>
-<body data-theme="brand">
+<body data-theme="brand" data-brand="twilight">
 <div class="bg" aria-hidden="true"><i></i><i></i><i></i><div class="aurora"></div><div class="floaters"></div><div class="spot"></div></div>
 <div id="app">
   <!-- Visible to search engines and while the app loads. Replaced as soon as the app starts. -->
@@ -59,12 +63,13 @@
       <li>Same-phone mode: pass the phone back and forth</li>
       <li>Private rooms for exactly two people, with view-once photos</li>
     </ul>
-    <p>Made by <a href="https://github.com/itsaddyon">itsaddyon</a>.</p>
+    <p>Made by <a href="https://itsaddyon.dev">itsaddyon</a>.</p>
   </main>
 </div>
 <div id="layer"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <noscript><p style="padding:24px">Sidechick needs JavaScript to run.</p></noscript>
+<script src="/config.js"></script>
 <script type="module" src="/js/app.js"></script>
 </body>
 </html>

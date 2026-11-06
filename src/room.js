@@ -44,7 +44,9 @@ export class Room {
   // ── lifecycle ────────────────────────────────────────────────────────────
   create(o) {
     const now = Date.now();
+    const isRand = o.mode === 'random' || o.mode === 'gamerandom';
     this.r = { code: o.code, mode: o.mode, token: o.token || null, kind: GAMES[o.kind] ? o.kind : null, rounds: o.rounds || 10,
+               photosAllowed: !isRand, photoReq: null,
                autoInvite: GAMES[o.invite?.kind] ? o.invite : null,          // { kind, cid }: a waiting stranger asked for a game
                users: new Map(), history: [], photos: new Map(), nextId: 0, game: null, invite: null, created: now, last: now, timer: null };
     this.r.timer = setInterval(() => {
@@ -103,6 +105,8 @@ export class Room {
       case 'react': return this.onReact(u, m);
       case 'photo': return this.onPhoto(u, m);
       case 'photo_open': return this.onPhotoOpen(u, m);
+      case 'photo_perm_req': return this.onPhotoPermReq(u, m);
+      case 'photo_perm_reply': return this.onPhotoPermReply(u, m);
       case 'game_start': return this.onGameStart(u, m);
       case 'game_invite': return this.onInvite(u, m);
       case 'invite_reply': return this.onInviteReply(u, m);
@@ -130,7 +134,7 @@ export class Room {
     const u = { uid: uid8(), ws: conn.ws, name, av: /^a\d{1,2}$/.test(m.av) ? m.av : 'a0', cid: clean(m.cid, 40), ip: conn.ip, last: 0, lastPhoto: 0, stamps: [] };
     conn.uid = u.uid; r.users.set(u.uid, u); r.last = Date.now();
     this.send(u, { t: 'joined', room: r.code, mode: r.mode, kind: r.kind, you: u.uid, users: this.usersView(),
-                   history: r.history, game: this.gameView(), vibe: this.vibe(), photos: !this.isRandom() });
+                   history: r.history, game: this.gameView(), vibe: this.vibe(), photos: !!r.photosAllowed });
     this.all({ t: 'users', users: this.usersView() });
     this.sys(`${name} joined`);
     if (!r.game && r.kind && r.users.size >= 2 && (r.mode === 'game' || r.mode === 'gamerandom')) this.startGame(r.kind, r.rounds);
@@ -178,11 +182,38 @@ export class Room {
     this.all({ t: 'reacts', id: msg.id, reacts: msg.reacts });
   }
 
-  // ── view-once photos (private rooms only) ────────────────────────────────
+  // ── view-once photos (private rooms or permitted random chats) ────────────
   // The picture lives in memory until the other person opens it, is sent to them once, then is deleted here.
+  onPhotoPermReq(u) {
+    const r = this.r, now = Date.now();
+    if (!r) return;
+    if (r.photosAllowed) return this.send(u, { t: 'toast', text: 'Photo sharing is already enabled.' });
+    if (r.users.size < 2) return this.send(u, { t: 'toast', text: 'Wait for someone to join first.' });
+    if (now - (u.lastPhotoReq || 0) < 4000) return this.send(u, { t: 'toast', text: 'Please wait a moment before asking again.' });
+    u.lastPhotoReq = now;
+    r.photoReq = { from: u.uid, at: now };
+    this.all({ t: 'photo_perm_req', from: u.name, uid: u.uid }, u);
+    this.send(u, { t: 'toast', text: 'Permission request sent.' });
+  }
+
+  onPhotoPermReply(u, m) {
+    const r = this.r;
+    if (!r || r.photosAllowed) return;
+    const req = r.photoReq;
+    r.photoReq = null;
+    if (m.accept) {
+      r.photosAllowed = true;
+      this.all({ t: 'photo_perm_granted' });
+      this.pushHistory({ sys: true, text: 'Photo sharing enabled for this chat' });
+    } else {
+      const from = req ? r.users.get(req.from) : null;
+      if (from && from !== u) this.send(from, { t: 'toast', text: `${u.name} declined photo sharing.` });
+    }
+  }
+
   onPhoto(u, m) {
     const r = this.r, now = Date.now();
-    if (this.isRandom()) return this.send(u, { t: 'toast', text: 'Photos are only available in private rooms.' });
+    if (!r.photosAllowed) return this.send(u, { t: 'toast', text: 'Photo sharing must be allowed by both people first.' });
     if (r.users.size < 2) return this.send(u, { t: 'toast', text: 'Wait for the other person to join first.' });
     const data = String(m.data || '');
     if (!data.startsWith(PHOTO_PREFIX) || data.length > PHOTO_MAX || !/^[A-Za-z0-9+/=]+$/.test(data.slice(PHOTO_PREFIX.length)))

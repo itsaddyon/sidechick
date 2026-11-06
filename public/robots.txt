@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /ws/
+Disallow: /api/
+
+Sitemap: https://sidechick.workers.dev/sitemap.xml
+
